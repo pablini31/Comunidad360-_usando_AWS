@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Community 360 · Plataforma de inteligencia y gestión de comunidad">
+  <title>Community 360</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script defer src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <!-- PANTALLA DE ACCESO (LAYOUT DIVIDIDO MODERNO) -->
+  <section id="login-screen" class="login-screen hidden" aria-label="Inicio de sesión">
+    <div class="login-visual">
+      <div class="login-visual-inner">
+        <div class="brand-lockup light">
+          <div class="brand-emblem">
+            <span>C</span><em>360</em>
+          </div>
+          <div class="brand-text">
+            <strong>Community 360</strong>
+            <small>Inteligencia de comunidad</small>
+          </div>
+        </div>
+
+        <div class="login-hero">
+          <span class="login-pill">Plataforma de comunidad en tiempo real</span>
+          <h1>Comprende el pulso real de tu comunidad en un solo lugar.</h1>
+          <p>
+            Explora tendencias, visualiza mapas de calor con privacidad garantizada y observa el movimiento de tu comunidad en vivo.
+          </p>
+        </div>
+
+        <div class="login-highlights">
+          <div class="highlight-card">
+            <div class="highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <strong>Directorio vivo</strong>
+              <span>Perfiles completos, intereses y actividad reciente de cada miembro.</span>
+            </div>
+          </div>
+          <div class="highlight-card">
+            <div class="highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div>
+              <strong>Privacidad garantizada</strong>
+              <span>Solo los miembros con autorización aparecen en los mapas de calor y reportes regionales.</span>
+            </div>
+          </div>
+          <div class="highlight-card">
+            <div class="highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div>
+              <strong>Indicadores en vivo</strong>
+              <span>Métricas, gráficas y actividad actualizadas al instante sin recargar la página.</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="login-footnote">Community 360 · Experiencia segura con acceso por perfil</p>
+      </div>
+    </div>
+
+    <div class="login-panel">
+      <div class="login-form-wrap">
+        <div class="login-mobile-brand">
+          <div class="brand-emblem dark"><span>C</span><em>360</em></div>
+          <strong>Community 360</strong>
+        </div>
+
+        <div class="login-form-head">
+          <h2>Iniciar sesión</h2>
+          <p>Ingresa con tu cuenta de administrador o analista para acceder a tu espacio.</p>
+        </div>
+
+        <form id="login-form" novalidate>
+          <div class="field-group">
+            <label for="login-username">Usuario</label>
+            <input
+              id="login-username"
+              name="username"
+              type="text"
+              placeholder="Ej. admin_c360 o analista_c360"
+              required
+              autocomplete="username"
+            >
+          </div>
+
+          <div class="field-group">
+            <label for="login-password">Contraseña</label>
+            <div class="password-input-wrap">
+              <input
+                id="login-password"
+                name="password"
+                type="password"
+                placeholder="Ingresa tu contraseña"
+                required
+                autocomplete="current-password"
+              >
+              <button
+                type="button"
+                id="toggle-password"
+                class="icon-ghost-btn"
+                aria-label="Mostrar u ocultar contraseña"
+                title="Mostrar contraseña"
+              >
+                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div id="login-error" class="form-alert error hidden" role="alert"></div>
+
+          <button type="submit" id="login-submit" class="btn btn-primary btn-block">
+            Entrar a Community 360
+          </button>
+        </form>
+
+        <div class="login-role-hint">
+          <span>¿Cambias de perfil con frecuencia?</span>
+          <p>Al entrar podrás alternar entre Administrador y Analista desde el botón <b>Cambiar de cuenta</b>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENEDOR DINÁMICO DE EXPERIENCIA POR ROL -->
+  <div id="app-root" class="app-root hidden"></div>
+
+  <!-- NOTIFICACIONES -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- MODAL COMPARTIDO -->
+  <dialog id="modal" class="modal-dialog">
+    <div class="modal-shell">
+      <button type="button" class="modal-close" aria-label="Cerrar ventana">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div id="modal-content" class="modal-body"></div>
+    </div>
+  </dialog>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

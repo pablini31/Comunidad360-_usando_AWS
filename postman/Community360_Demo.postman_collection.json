@@ -1,0 +1,262 @@
+{
+  "info": {
+    "_postman_id": "c360-demo-collection-v1",
+    "name": "Community 360 — Demo REST + WebSockets (Fases 4, 5 y 6)",
+    "description": "Colección lista para demostrar la autenticación JWT, consulta histórica de interacciones, CRUD completo (POST, PUT, PATCH, DELETE) con actualización en tiempo real vía Socket.io y recálculo automático de indicadores en el dashboard.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "admin_c360",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "REEMPLAZAR_POR_TU_CLAVE_ADMIN",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testInteractionId",
+      "value": "I999999",
+      "type": "string"
+    },
+    {
+      "key": "sampleUserId",
+      "value": "U000001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Login Administrador (guarda token JWT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login exitoso (HTTP 200)', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "const json = pm.response.json();",
+              "if (json && json.token) {",
+              "    pm.collectionVariables.set('token', json.token);",
+              "    console.log('Token JWT guardado automáticamente en la variable de colección.');",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "2. Consultar histórico de interacciones (GET)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/interacciones?limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "interacciones"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            },
+            {
+              "key": "canal",
+              "value": "Discord",
+              "disabled": true
+            },
+            {
+              "key": "id_usuario",
+              "value": "{{sampleUserId}}",
+              "disabled": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. Crear interacción en tiempo real (POST -> 201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Interacción creada (HTTP 201)', function () {",
+              "    pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_interaccion\": \"{{testInteractionId}}\",\n  \"id_usuario\": \"{{sampleUserId}}\",\n  \"timestamp\": \"2026-11-24T18:30:00.000Z\",\n  \"canal\": \"Discord\",\n  \"tipo\": \"publicacion\",\n  \"texto\": \"¡Excelente encuentro comunitario de ilustración esta semana!\",\n  \"tema\": \"arte\",\n  \"sentimiento\": 0.92,\n  \"idioma\": \"es\",\n  \"dispositivo\": \"web\",\n  \"reacciones_recibidas\": 18,\n  \"etiquetas\": [\"arte\", \"comunidad\", \"demo\"],\n  \"ubicacion_autorizada\": true,\n  \"ubicacion\": {\n    \"pais\": \"Mexico\",\n    \"estado\": \"Jalisco\",\n    \"ciudad\": \"Guadalajara\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/interacciones",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "interacciones"]
+        }
+      }
+    },
+    {
+      "name": "4. Modificar interacción completa (PUT -> 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Interacción modificada (HTTP 200)', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_usuario\": \"{{sampleUserId}}\",\n  \"timestamp\": \"2026-11-24T18:35:00.000Z\",\n  \"canal\": \"Instagram\",\n  \"tipo\": \"comentario\",\n  \"texto\": \"Actualización en vivo: ya superamos las 40 reacciones en la galería.\",\n  \"tema\": \"arte\",\n  \"sentimiento\": 0.96,\n  \"idioma\": \"es\",\n  \"dispositivo\": \"mobile\",\n  \"reacciones_recibidas\": 42,\n  \"etiquetas\": [\"arte\", \"galeria\", \"en-vivo\"],\n  \"ubicacion_autorizada\": true,\n  \"ubicacion\": {\n    \"pais\": \"Mexico\",\n    \"estado\": \"Jalisco\",\n    \"ciudad\": \"Guadalajara\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/interacciones/{{testInteractionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "interacciones", "{{testInteractionId}}"]
+        }
+      }
+    },
+    {
+      "name": "5. Modificación parcial de interacción (PATCH -> 200)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reacciones_recibidas\": 55,\n  \"sentimiento\": 0.98\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/interacciones/{{testInteractionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "interacciones", "{{testInteractionId}}"]
+        }
+      }
+    },
+    {
+      "name": "6. Consultar resumen analítico actualizado (GET -> 200)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/analytics/resumen",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "analytics", "resumen"]
+        }
+      }
+    },
+    {
+      "name": "7. Eliminar interacción de prueba (DELETE -> 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Interacción eliminada (HTTP 200)', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/interacciones/{{testInteractionId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "interacciones", "{{testInteractionId}}"]
+        }
+      }
+    }
+  ]
+}

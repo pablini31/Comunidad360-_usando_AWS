@@ -1,0 +1,31 @@
+{
+  "name": "community360",
+  "version": "1.0.0",
+  "description": "Community 360 administration dashboard and API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "seed:admin": "node scripts/seed_admin.js",
+    "verify:api": "node tests/verify_api.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1173.0",
+    "@aws-sdk/lib-dynamodb": "^3.1173.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "csv-parse": "^7.0.3",
+    "dotenv": "^18.0.10",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.1.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.24.6",
+    "socket.io": "^4.8.4",
+    "zod": "^4.1.12"
+  }
+}
