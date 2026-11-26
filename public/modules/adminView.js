@@ -3,6 +3,7 @@ import {
   activityTypeBadge,
   avatarHtml,
   escapeHtml,
+  formatActivityType,
   formatConsent,
   formatDate,
   formatDateTime,
@@ -15,6 +16,7 @@ import {
   statusBadge,
 } from './format.js';
 import {
+  aggregateCitiesFromPoints,
   destroyMap,
   flyToLocation,
   renderCommunityMap,
@@ -24,6 +26,7 @@ import {
 } from './map.js';
 import {
   openChangePasswordModal,
+  openCityMembersModal,
   openLinkPendingModal,
   openMemberDetailModal,
   openMemberFormModal,
@@ -31,7 +34,7 @@ import {
   openPendingDetailModal,
 } from './modals.js';
 
-export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
+export function mountAdminView(root, { api, profile, onSwitchAccount, onToggleColorMode, toast }) {
   let activeView = 'overview';
   let locations = [];
   let page = 1;
@@ -67,6 +70,10 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
             <span class="live-pill dark-live connecting" id="admin-live-status" title="Estado de actualización en vivo">
               <i class="live-dot"></i><span>Conectando</span>
             </span>
+            <button type="button" class="theme-toggle-btn btn-sm" id="admin-theme-toggle" title="Cambiar entre modo claro y oscuro">
+              <span class="theme-icon">🌙</span>
+              <span class="theme-label">Modo oscuro</span>
+            </button>
             <div class="studio-user-chip">
               ${avatarHtml(profile.username, 'xs')}
               <span>${escapeHtml(profile.username)}</span>
@@ -97,11 +104,6 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
                   <p>
                     Cada publicación, reacción o cambio de perfil se refleja al instante en los indicadores y en el mapa interactivo con privacidad garantizada.
                   </p>
-                </div>
-                <div class="studio-hero-shortcuts">
-                  <button type="button" class="btn btn-gold btn-sm" data-admin-jump="map">Abrir mapa interactivo</button>
-                  <button type="button" class="btn btn-studio-outline btn-sm" data-admin-jump="users">Gestionar miembros</button>
-                  <button type="button" class="btn btn-studio-outline btn-sm" data-admin-jump="activity">Ver pulso en vivo</button>
                 </div>
               </div>
             </div>
@@ -191,12 +193,12 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
               <div class="chart-box"><canvas id="admin-status-chart"></canvas></div>
             </article>
 
-            <article class="studio-panel">
+            <article class="studio-panel" id="admin-type-card">
               <div class="studio-panel-head">
                 <div>
                   <span class="studio-panel-num">B2</span>
-                  <h2>Privacidad y consentimiento</h2>
-                  <p>Ubicación autorizada frente a protegida</p>
+                  <h2>Tipos de actividad en vivo</h2>
+                  <p>Distribución dinámica entre publicaciones, comentarios, mensajes y reacciones</p>
                 </div>
               </div>
               <div class="chart-box"><canvas id="admin-consent-chart"></canvas></div>
@@ -374,9 +376,12 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
             </div>
 
             <aside class="studio-map-rail">
-              <div class="rail-head">
-                <h3>Volar a región</h3>
-                <p>Selecciona un destino autorizado</p>
+              <div id="admin-city-inspector" class="city-inspector-card">
+                <div class="empty-state compact">Haz clic en cualquier punto o zona del mapa para inspeccionar sus datos.</div>
+              </div>
+              <div class="rail-head" style="margin-top:16px">
+                <h3>Volar a ciudad</h3>
+                <p>Haz clic para centrar y ver desglose</p>
               </div>
               <div id="admin-map-summary" class="studio-geo-list">
                 <div class="empty-state compact">Cargando ubicaciones…</div>
@@ -479,6 +484,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
 
   function renderActivityCard(item, isLiveNew = false) {
     const sent = formatSentiment(item.sentimiento);
+    const authorLabel = item.alias_usuario || 'Miembro de la comunidad';
     return `
       <article class="activity-card ${isLiveNew ? 'live-flash' : ''}" data-activity-id="${escapeHtml(item.id_interaccion)}">
         <div class="activity-card-head">
@@ -492,7 +498,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
         </div>
         ${item.texto ? `<p class="activity-body">${escapeHtml(item.texto)}</p>` : ''}
         <div class="activity-footer">
-          <span>Miembro <b>${escapeHtml(item.id_usuario)}</b> · Tema: <b>${escapeHtml(item.tema || 'General')}</b> · Reacciones: <b>${formatNumber(item.reacciones_recibidas ?? 0)}</b></span>
+          <span>Por <b>${escapeHtml(authorLabel)}</b> · Tema: <b>${escapeHtml(item.tema || 'General')}</b> · Reacciones: <b>${formatNumber(item.reacciones_recibidas ?? 0)}</b></span>
           <div class="chip-row">
             ${(item.etiquetas || []).map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join('')}
             <span class="tag-chip privacy">${item.ubicacion_autorizada ? 'Ubicación autorizada' : 'Ubicación protegida'}</span>
@@ -554,6 +560,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
 
   $('#admin-map-reset').addEventListener('click', () => resetMapBounds());
   $('#admin-top-switch').addEventListener('click', onSwitchAccount);
+  $('#admin-theme-toggle')?.addEventListener('click', () => onToggleColorMode?.());
   $('#admin-change-pwd').addEventListener('click', () => openChangePasswordModal({ api, toast }));
 
   async function loadCatalogs() {
@@ -670,6 +677,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       flashElement($('#kpi-activity-card'));
       flashElement($('#kpi-sentiment-card'));
       flashElement($('#admin-channel-card'));
+      flashElement($('#admin-type-card'));
     }
 
     renderChart(
@@ -701,14 +709,26 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       }</div>`;
     }
 
-    renderChart(
-      'admin-consent-chart',
-      buildDoughnutConfig({
-        labels: ['Ubicación autorizada', 'Ubicación protegida'],
-        data: [consentSi, consentNo],
-        colors: ['#0f5e6b', '#d9d2c5'],
-      })
-    );
+    const typesList = Array.isArray(d.por_tipo) && d.por_tipo.length ? d.por_tipo : null;
+    if (typesList) {
+      renderChart(
+        'admin-consent-chart',
+        buildDoughnutConfig({
+          labels: typesList.map((x) => `${formatActivityType(x.tipo).label} (${x.tasa_participacion}%)`),
+          data: typesList.map((x) => x.total),
+          colors: ['#ee6c4d', '#0f5e6b', '#16a37a', '#f2a900', '#7c6ee6'],
+        })
+      );
+    } else {
+      renderChart(
+        'admin-consent-chart',
+        buildDoughnutConfig({
+          labels: ['Ubicación autorizada', 'Ubicación protegida'],
+          data: [consentSi, consentNo],
+          colors: ['#0f5e6b', '#d9d2c5'],
+        })
+      );
+    }
 
     const countries = (d.por_pais || []).slice(0, 8);
     renderChart(
@@ -971,21 +991,83 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       .sort((a, b) => b.usuarios - a.usuarios);
   }
 
-  async function loadMap() {
+  function renderCityInspector(city) {
+    const el = $('#admin-city-inspector');
+    if (!el || !city) return;
+    const sent = formatSentiment(city.sentimiento);
+    const total = Math.max(1, city.usuarios);
+    const actPct = Math.round((city.activos / total) * 100);
+    const riskPct = Math.round((city.en_riesgo / total) * 100);
+    const inactPct = Math.max(0, 100 - actPct - riskPct);
+    const latStr = `${Math.abs(city.lat).toFixed(2)}° ${city.lat >= 0 ? 'N' : 'S'}`;
+    const lngStr = `${Math.abs(city.lng).toFixed(2)}° ${city.lng >= 0 ? 'E' : 'O'}`;
+
+    el.innerHTML = `
+      <div class="inspector-head">
+        <div>
+          <span class="inspector-kicker">CIUDAD SELECCIONADA</span>
+          <h3>${escapeHtml(city.ciudad)}</h3>
+          <small>${escapeHtml(city.pais)} · ${latStr}, ${lngStr}</small>
+        </div>
+        <span class="pill pill-${sent.tone}">Ánimo ${escapeHtml(sent.score)}</span>
+      </div>
+
+      <div class="inspector-kpis">
+        <div><span>Miembros</span><strong>${formatNumber(city.usuarios)}</strong></div>
+        <div><span>Activos</span><strong>${formatNumber(city.activos)} (${actPct}%)</strong></div>
+        <div><span>En riesgo</span><strong>${formatNumber(city.en_riesgo)}</strong></div>
+        <div><span>Inactivos</span><strong>${formatNumber(city.inactivos)}</strong></div>
+      </div>
+
+      <div class="inspector-bar" title="Proporción Activos / En riesgo / Inactivos">
+        <span style="width:${actPct}%;background:#16a37a"></span>
+        <span style="width:${riskPct}%;background:#f2a900"></span>
+        <span style="width:${inactPct}%;background:#e5566d"></span>
+      </div>
+
+      <button type="button" class="btn btn-gold btn-sm btn-block" id="admin-explore-city-btn">
+        Ver miembros de ${escapeHtml(city.ciudad)} →
+      </button>
+    `;
+
+    $('#admin-explore-city-btn')?.addEventListener('click', () => {
+      openCityMembersModal({
+        ciudad: city.ciudad,
+        pais: city.pais,
+        api,
+        isAdmin: true,
+        locations,
+        toast,
+        onSaved: () => loadMap(true),
+      });
+    });
+  }
+
+  async function loadMap(preserveView = false) {
     const banner = $('#admin-privacy-banner');
     const summaryEl = $('#admin-map-summary');
-    banner.textContent = 'Consultando ubicaciones autorizadas…';
+    if (!preserveView) banner.textContent = 'Consultando ubicaciones autorizadas…';
     try {
-      const [points, protectedRes] = await Promise.all([
-        api('/api/analytics/mapa'),
+      const [points, protectedRes, summary] = await Promise.all([
+        mapPointsCache.length && preserveView ? Promise.resolve(mapPointsCache) : api('/api/analytics/mapa'),
         api('/api/usuarios?consentimiento_datos=no&limit=1'),
+        summaryCache ? Promise.resolve(summaryCache) : api('/api/analytics/resumen').catch(() => null),
       ]);
+      if (summary) summaryCache = summary;
       mapPointsCache = points || [];
 
-      banner.innerHTML = `<strong>${formatNumber(protectedRes.total)} miembros protegidos</strong> excluidos por privacidad · <b>${formatNumber(mapPointsCache.length)}</b> ubicaciones reales autorizadas en el mapa.`;
-      renderCommunityMap('admin-map-canvas', mapPointsCache, { theme: mapBasemap, mode: mapLayerMode });
+      banner.innerHTML = `<strong>${formatNumber(protectedRes.total)} miembros protegidos</strong> excluidos por privacidad · <b>${formatNumber(mapPointsCache.length)}</b> ubicaciones reales autorizadas en el mapa. Haz clic en cualquier círculo o zona para ver sus datos.`;
+      renderCommunityMap('admin-map-canvas', mapPointsCache, {
+        theme: mapBasemap,
+        mode: mapLayerMode,
+        cityActivity: summaryCache?.por_ciudad || [],
+        preserveView,
+        onSelectCity: renderCityInspector,
+        onExploreCityMembers: (ciudad, pais) =>
+          openCityMembersModal({ ciudad, pais, api, isAdmin: true, locations, toast, onSaved: () => loadMap(true) }),
+      });
 
-      const cities = buildCityCentroids(mapPointsCache).slice(0, 12);
+      const cities = aggregateCitiesFromPoints(mapPointsCache, summaryCache?.por_ciudad || []).slice(0, 12);
       summaryEl.innerHTML = cities.length
         ? cities
             .map((c) => {
@@ -1038,22 +1120,25 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       $('#admin-more-pending').disabled = !reviewCursor;
       const html = (q.items || [])
         .map(
-          (item) => `
+          (item) => {
+            const cleanNum = String(item.id_interaccion || '').replace(/^[A-Za-z_]+/, '');
+            return `
             <article class="activity-card">
               <div class="activity-card-head">
                 <div class="activity-badges">
-                  <strong>${escapeHtml(item.id_interaccion)}</strong>
+                  <strong>Registro pendiente #${escapeHtml(cleanNum || item.id_interaccion)}</strong>
                   <span class="pill pill-warning">${escapeHtml(formatReviewReason(item.motivo_rechazo))}</span>
                 </div>
                 <time>${escapeHtml(formatDateTime(item.fecha_cuarentena))}</time>
               </div>
-              <p class="activity-sub">Miembro referenciado: <b>${escapeHtml(item.id_usuario_referenciado || 'Desconocido')}</b></p>
+              <p class="activity-sub">Perfil por verificar · ${escapeHtml(formatDate(item.fecha_cuarentena))}</p>
               <div class="action-row" style="margin-top:10px">
                 <button type="button" class="btn btn-subtle btn-xs pending-inspect" data-id="${escapeHtml(item.id_interaccion)}">Ver detalle</button>
                 <button type="button" class="btn btn-primary btn-xs pending-link" data-id="${escapeHtml(item.id_interaccion)}" data-uid="${escapeHtml(item.id_usuario_referenciado || '')}">Vincular a miembro</button>
               </div>
             </article>
-          `
+          `;
+          }
         )
         .join('');
       if (html) pendingList.insertAdjacentHTML('beforeend', html);
@@ -1199,7 +1284,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
   function onRealtimeEvent(eventName, payload) {
     if (eventName === 'analytics:actualizado' && payload) {
       applySummaryToOverview(payload, activeView === 'overview');
-      if (activeView === 'map') loadMap();
+      if (activeView === 'map') loadMap(true);
       return;
     }
 

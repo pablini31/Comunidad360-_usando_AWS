@@ -32,11 +32,17 @@ $$\bar{r} = \frac{1}{N} \sum_{i=1}^{N} r_i, \quad r_i \ge 0$$
 - Donde $r_i$ corresponde a `reacciones_recibidas` de la interacción $i$, y el acumulado total es $R = \sum_{i=1}^{N} r_i$.
 - **Campos JSON:** `promedio_reacciones` (2 decimales) y `total_reacciones`.
 
-### 1.5 Tasa de participación por canal ($T_c$)
-Para cada canal $c \in C$ (ej. Discord, Instagram, Telegram, TikTok, Twitter/X, Facebook):
+### 1.5 Tasa de participación por canal ($T_c$) — Gráfica de Barras en Vivo
+Para cada canal $c \in C$ (Discord, Instagram, Telegram, TikTok, Twitter/X, Facebook):
 $$n_c = |\{i \in I \mid \text{canal}(i) = c\}|, \qquad T_c = \frac{n_c}{N} \times 100$$
-- **Campo JSON:** `canales[].total` ($n_c$) y `canales[].tasa_participacion` ($T_c$, porcentaje `%` con 2 decimales).
+- **Campo JSON:** `canales[].total` ($n_c$) y `canales[].tasa_participacion` ($T_c$, `%` con 2 decimales).
 - **Propiedad de consistencia:** $\sum_{c \in C} T_c \approx 100\%$.
+
+### 1.6 Distribución por tipo de actividad ($T_{\text{tipo}}$) — Gráfica de Dona en Vivo
+Para cada formato de actividad $t \in \{\text{publicacion}, \text{comentario}, \text{mensaje}, \text{reaccion}\}$:
+$$n_t = |\{i \in I \mid \text{tipo}(i) = t\}|, \qquad T_t = \frac{n_t}{N} \times 100$$
+- **Campo JSON:** `por_tipo[].total` ($n_t$) y `por_tipo[].tasa_participacion` ($T_t$, `%` con 2 decimales).
+- **Visualización:** Gráfica de dona que se actualiza en tiempo real al crear, modificar o eliminar una interacción desde Postman.
 
 ---
 
@@ -50,7 +56,7 @@ $$A_{\%} = \frac{|\{u \in U \mid \text{estatus}(u) = \text{'activo'}\}|}{M} \tim
 
 ### 2.2 Tasa de consentimiento de ubicación ($C_{\text{si}}$) y exclusión por privacidad ($C_{\text{no}}$)
 $$C_{\text{si}} = \frac{|\{u \in U \mid \text{consentimiento}(u) = \text{'si'}\}|}{M} \times 100, \qquad N_{\text{protegidos}} = |\{u \in U \mid \text{consentimiento}(u) = \text{'no'}\}|$$
-- **Regla de privacidad estricta:** Los $N_{\text{protegidos}}$ miembros sin consentimiento tienen `ciudad_id = NULL`, `latitud = NULL` y `longitud = NULL`, por lo que quedan **100% excluidos** del mapa de calor y de las métricas geográficas.
+- **Regla de privacidad estricta:** Los $N_{\text{protegidos}} = 171$ miembros sin consentimiento tienen `ciudad_id = NULL`, `latitud = NULL` y `longitud = NULL`, por lo que quedan **100% excluidos** del mapa de calor y de las métricas geográficas.
 
 ### 2.3 Sentimiento promedio ponderado por país ($\bar{s}_p$)
 Para cada país $p$ usando únicamente miembros con `consentimiento_datos = 'si'`:
@@ -60,18 +66,8 @@ $$\bar{s}_p = \frac{\sum_{j \in \text{ciudades}(p)} \bar{s}_{p,j} \cdot u_{p,j}}
 
 ---
 
-## 3. Intensidad en el Mapa de Calor (`leaflet.heat`)
+## 3. Intensidad Dinámica en el Mapa de Calor (`leaflet.heat`)
 
-Cada punto geográfico autorizado $(lat_k, lon_k)$ proyectado en el mapa de calor recibe un peso normalizado de intensidad $w_k \in [0.28, 1.00]$ derivado del sentimiento promedio del miembro:
-$$w_k = \min\!\left(1.0,\ \max\!\left(0.28,\ \frac{s_k + 1}{2}\right)\right)$$
-- Garantiza visibilidad mínima para todos los puntos autorizados mientras resalta visualmente las zonas con mayor concentración y clima comunitario positivo.
-
----
-
-## 4. Flujo de Consistencia en Tiempo Real (Fase 5)
-
-1. Postman envía `POST /api/interacciones`, `PUT /api/interacciones/:id`, `PATCH /api/interacciones/:id` o `DELETE /api/interacciones/:id` con JWT de administrador.
-2. El servidor valida las reglas de integridad y privacidad, persiste el cambio en DynamoDB e invalida la caché de analítica.
-3. El servidor emite por Socket.io el evento puntual (`interaccion:creada`, `interaccion:actualizada` o `interaccion:eliminada`).
-4. Acto seguido, recalcula las fórmulas anteriores y emite `analytics:actualizado` a todos los clientes conectados.
-5. Los dashboards (Administrador y Analista) actualizan tarjetas KPI, gráficas de barras/dona, mapa de calor y flujo de actividad **sin recargar la página**.
+Cada punto geográfico autorizado $(lat_k, lon_k)$ proyectado en el mapa de calor recibe un peso normalizado de intensidad $w_k \in [0.28, 1.00]$ que combina el sentimiento promedio del miembro ($s_k$) con el volumen de actividad en tiempo real de su ciudad ($a_{\text{ciudad}(k)}$):
+$$w_k = \min\!\left(1.0,\ \max\!\left(0.28,\ \frac{s_k + 1}{2} + \min\big(0.28,\ 0.08 \cdot \ln(1 + a_{\text{ciudad}(k)})\big)\right)\right)$$
+- Cuando se registra o elimina una interacción con ubicación autorizada en una ciudad, `por_ciudad[].interacciones` ($a_{\text{ciudad}(k)}$) cambia y el mapa de calor recalcula su intensidad en tiempo real.

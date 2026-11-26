@@ -5,14 +5,47 @@ const pool = require('../config/mariadb');
 const env = require('../config/env');
 const dummyHash = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10);
 
-async function authenticate(username, password) {
-  const [rows] = await pool.execute('SELECT admin_id, username, email, password_hash, rol, activo, creado_en FROM administradores_auth WHERE username = ? LIMIT 1', [username]);
+async function authenticate(usernameOrEmail, password) {
+  const identifier = String(usernameOrEmail || '').trim();
+  const [rows] = await pool.execute(
+    'SELECT admin_id, username, email, password_hash, rol, activo, creado_en FROM administradores_auth WHERE username = ? OR email = ? LIMIT 1',
+    [identifier, identifier]
+  );
   const account = rows[0];
   const passwordMatches = await bcrypt.compare(password, account?.password_hash || dummyHash);
   if (!account || account.activo !== 1 || !passwordMatches) return null;
   const token = jwt.sign({ sub: String(account.admin_id) }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
   const { password_hash, ...profile } = account;
   return { token, user: profile };
+}
+
+async function register({ username, email, password, rol = 'analista' }) {
+  const cleanUser = String(username || '').trim();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanRole = rol === 'admin' ? 'admin' : 'analista';
+  const hash = await bcrypt.hash(password, 10);
+  try {
+    const [r] = await pool.execute(
+      'INSERT INTO administradores_auth(username,email,password_hash,rol,activo) VALUES(?,?,?,?,1)',
+      [cleanUser, cleanEmail, hash, cleanRole]
+    );
+    const profile = {
+      admin_id: r.insertId,
+      username: cleanUser,
+      email: cleanEmail,
+      rol: cleanRole,
+      activo: 1,
+    };
+    const token = jwt.sign({ sub: String(profile.admin_id) }, env.jwtSecret, { expiresIn: env.jwtExpiresIn });
+    return { token, user: profile };
+  } catch (e) {
+    if (e.code === 'ER_DUP_ENTRY') {
+      const conflict = new Error('El nombre de usuario o correo ya está registrado.');
+      conflict.status = 409;
+      throw conflict;
+    }
+    throw e;
+  }
 }
 
 async function changePassword(adminId, currentPassword, newPassword) {
@@ -23,4 +56,4 @@ async function changePassword(adminId, currentPassword, newPassword) {
   return true;
 }
 
-module.exports = { authenticate, changePassword };
+module.exports = { authenticate, register, changePassword };

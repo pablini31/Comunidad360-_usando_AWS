@@ -9,6 +9,7 @@ const { notFound, errorHandler } = require('./middlewares/error.middleware');
 
 const app = express();
 app.disable('x-powered-by');
+app.set('trust proxy', 1);
 
 app.use(
   helmet({
@@ -55,6 +56,10 @@ app.use(
 app.use(cors({ origin: env.corsOrigin ? env.corsOrigin.split(',').map((s) => s.trim()) : false }));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('combined', { skip: (req) => req.path.startsWith('/api/') }));
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'community360', timestamp: new Date().toISOString() });
+});
+
 app.use(
   '/api',
   (req, res, next) => {

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-color-mode="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -8,7 +8,7 @@
   <title>Community 360</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <link rel="stylesheet" href="/styles.css">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -17,8 +17,8 @@
   <script defer src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <!-- PANTALLA DE ACCESO: ESTÉTICA CINEMÁTICA + TIPOGRAFÍA KINÉTICA -->
-  <section id="login-screen" class="login-stage hidden" aria-label="Inicio de sesión">
+  <!-- PANTALLA DE ACCESO Y REGISTRO -->
+  <section id="login-screen" class="login-stage hidden" aria-label="Acceso a la comunidad">
     <div class="login-canvas">
       <div class="login-backdrop" aria-hidden="true"></div>
       <div class="login-topbar">
@@ -26,7 +26,7 @@
           <span class="wordmark-dot"></span>
           <strong>COMMUNITY 360</strong>
         </div>
-        <span class="login-edition">PULSO EN TIEMPO REAL · EDICIÓN 2026</span>
+        <span class="login-edition">PLATAFORMA DE COMUNIDAD EN TIEMPO REAL</span>
       </div>
 
       <div class="login-echo-stack" aria-hidden="true">
@@ -40,79 +40,157 @@
       <div class="login-manifesto">
         <div class="manifesto-plus">+</div>
         <p>
-          El pulso vivo de una comunidad no se lee en hojas grises:
-          <strong>se siente en el mapa, se escucha en cada canal y se transforma al instante.</strong>
+          Explora cómo crece nuestra comunidad:
+          <strong>conoce a sus miembros, interactúa con el mapa en vivo y sigue el pulso de cada espacio.</strong>
         </p>
       </div>
 
       <div class="login-tags" aria-hidden="true">
         <span>Comunidad en vivo</span>
-        <span>Mapa de calor real</span>
+        <span>Mapa interactivo</span>
         <span>Privacidad integrada</span>
         <span>Actualización instantánea</span>
       </div>
     </div>
 
     <aside class="login-dock">
-      <div class="login-dock-inner">
+      <div class="login-dock-top">
         <div class="login-mobile-wordmark">
           <span class="wordmark-dot"></span>
           <strong>COMMUNITY 360</strong>
         </div>
+        <button type="button" class="theme-toggle-btn" id="login-theme-toggle" title="Cambiar entre modo claro y oscuro">
+          <span class="theme-icon">🌙</span>
+          <span class="theme-label">Modo oscuro</span>
+        </button>
+      </div>
 
-        <div class="login-dock-head">
-          <span class="dock-kicker">ACCESO PRIVADO</span>
-          <h1>Bienvenido de vuelta</h1>
-          <p>Tu experiencia se adapta automáticamente a tu perfil: Estudio Operativo o Portal Editorial.</p>
+      <div class="login-dock-inner">
+        <div class="auth-mode-tabs" role="tablist" aria-label="Opciones de acceso">
+          <button type="button" class="active" id="tab-login-btn" data-auth-tab="login">Iniciar sesión</button>
+          <button type="button" id="tab-register-btn" data-auth-tab="register">Crear cuenta</button>
         </div>
 
-        <form id="login-form" novalidate>
-          <div class="field-group dark-field">
-            <label for="login-username">Usuario</label>
-            <input
-              id="login-username"
-              name="username"
-              type="text"
-              placeholder="Ej. admin_c360 o analista_c360"
-              required
-              autocomplete="username"
-            >
+        <!-- PANEL 1: INICIAR SESIÓN -->
+        <div id="auth-login-pane">
+          <div class="login-dock-head">
+            <span class="dock-kicker">BIENVENIDA / O</span>
+            <h1>Accede a tu espacio</h1>
+            <p>Ingresa con tu usuario o correo electrónico para continuar.</p>
           </div>
 
-          <div class="field-group dark-field">
-            <label for="login-password">Contraseña</label>
-            <div class="password-input-wrap">
+          <form id="login-form" novalidate>
+            <div class="field-group dark-field">
+              <label for="login-username">Usuario o correo</label>
               <input
-                id="login-password"
+                id="login-username"
+                name="username"
+                type="text"
+                placeholder="Ej. admin o analista"
+                required
+                autocomplete="username"
+              >
+            </div>
+
+            <div class="field-group dark-field">
+              <label for="login-password">Contraseña</label>
+              <div class="password-input-wrap">
+                <input
+                  id="login-password"
+                  name="password"
+                  type="password"
+                  placeholder="Ingresa tu contraseña"
+                  required
+                  autocomplete="current-password"
+                >
+                <button
+                  type="button"
+                  id="toggle-password"
+                  class="icon-ghost-btn"
+                  aria-label="Mostrar u ocultar contraseña"
+                  title="Mostrar contraseña"
+                >
+                  <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div id="login-error" class="form-alert error hidden" role="alert"></div>
+
+            <button type="submit" id="login-submit" class="btn btn-gold btn-block">
+              Entrar a Community 360
+            </button>
+          </form>
+        </div>
+
+        <!-- PANEL 2: CREAR CUENTA NUEVA -->
+        <div id="auth-register-pane" class="hidden">
+          <div class="login-dock-head">
+            <span class="dock-kicker">NUEVO PERFIL</span>
+            <h1>Crear cuenta nueva</h1>
+            <p>Regístrate para explorar la comunidad o gestionar operaciones.</p>
+          </div>
+
+          <form id="register-form" novalidate>
+            <div class="field-group dark-field">
+              <label for="reg-username">Nombre de usuario</label>
+              <input
+                id="reg-username"
+                name="username"
+                type="text"
+                minlength="4"
+                maxlength="40"
+                placeholder="Mínimo 4 caracteres"
+                required
+                autocomplete="username"
+              >
+            </div>
+
+            <div class="field-group dark-field">
+              <label for="reg-email">Correo electrónico</label>
+              <input
+                id="reg-email"
+                name="email"
+                type="email"
+                placeholder="nombre@correo.com"
+                required
+                autocomplete="email"
+              >
+            </div>
+
+            <div class="field-group dark-field">
+              <label for="reg-password">Contraseña</label>
+              <input
+                id="reg-password"
                 name="password"
                 type="password"
-                placeholder="Ingresa tu contraseña"
+                minlength="4"
+                placeholder="Mínimo 4 caracteres"
                 required
-                autocomplete="current-password"
+                autocomplete="new-password"
               >
-              <button
-                type="button"
-                id="toggle-password"
-                class="icon-ghost-btn"
-                aria-label="Mostrar u ocultar contraseña"
-                title="Mostrar contraseña"
-              >
-                <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg class="eye-closed hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              </button>
             </div>
-          </div>
 
-          <div id="login-error" class="form-alert error hidden" role="alert"></div>
+            <div class="field-group dark-field">
+              <label for="reg-rol">Tipo de experiencia</label>
+              <select id="reg-rol" name="rol" required>
+                <option value="analista">Analista · Portal de Comunidad e Insights</option>
+                <option value="admin">Administrador · Estudio de Gestión</option>
+              </select>
+            </div>
 
-          <button type="submit" id="login-submit" class="btn btn-gold btn-block">
-            Entrar a Community 360
-          </button>
-        </form>
+            <div id="register-error" class="form-alert error hidden" role="alert"></div>
+
+            <button type="submit" id="register-submit" class="btn btn-gold btn-block">
+              Crear cuenta y entrar
+            </button>
+          </form>
+        </div>
 
         <div class="login-dock-foot">
           <span>DOS EXPERIENCIAS · UN MISMO PULSO</span>
-          <p>Dentro podrás alternar en un clic entre Administrador y Analista con el botón <b>Cambiar de cuenta</b>.</p>
+          <p>Puedes alternar en cualquier momento con el botón <b>Cambiar de cuenta</b>.</p>
         </div>
       </div>
     </aside>

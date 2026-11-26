@@ -1,12 +1,7 @@
 const { z } = require('zod');
 
 const str = (min = 1, max = 255) => z.string().trim().min(min).max(max);
-const pwd = z
-  .string()
-  .min(8)
-  .regex(/[A-Z]/, 'Debe incluir mayúscula.')
-  .regex(/[a-z]/, 'Debe incluir minúscula.')
-  .regex(/[0-9]/, 'Debe incluir número.');
+const pwd = z.string().min(4, 'La contraseña debe tener al menos 4 caracteres.');
 const nullableNumber = z.union([z.number().finite(), z.null()]).optional();
 
 const user = z

@@ -3,6 +3,7 @@ import {
   activityTypeBadge,
   avatarHtml,
   escapeHtml,
+  formatActivityType,
   formatConsent,
   formatDate,
   formatDateTime,
@@ -15,6 +16,7 @@ import {
   statusBadge,
 } from './format.js';
 import {
+  aggregateCitiesFromPoints,
   destroyMap,
   flyToLocation,
   renderCommunityMap,
@@ -22,9 +24,9 @@ import {
   setMapBasemap,
   setMapLayerMode,
 } from './map.js';
-import { openChangePasswordModal, openMemberDetailModal, openPendingDetailModal } from './modals.js';
+import { openChangePasswordModal, openCityMembersModal, openMemberDetailModal, openPendingDetailModal } from './modals.js';
 
-export function mountAnalystView(root, { api, profile, onSwitchAccount, toast }) {
+export function mountAnalystView(root, { api, profile, onSwitchAccount, onToggleColorMode, toast }) {
   let activeSection = 'home';
   let locations = [];
   let summaryCache = null;
@@ -54,6 +56,9 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
           <div class="glass-nav-side right">
             <button type="button" data-section="members">Miembros</button>
             <button type="button" data-section="conversations">Conversaciones</button>
+            <button type="button" class="theme-toggle-btn btn-xs" id="analyst-theme-toggle" title="Cambiar entre modo claro y oscuro">
+              <span class="theme-icon">🌙</span>
+            </button>
             <button type="button" class="glass-switch-pill" id="analyst-switch-btn">Cambiar cuenta</button>
           </div>
         </nav>
@@ -90,11 +95,6 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
               <p>
                 Recorre las conversaciones, observa las tendencias en tiempo real y navega el atlas interactivo construido con privacidad desde el origen.
               </p>
-              <div class="hero-cta-row">
-                <button type="button" class="btn btn-gold" data-jump="map">Explorar atlas real</button>
-                <button type="button" class="btn btn-glass-light" data-jump="trends">Ver tendencias</button>
-                <button type="button" class="btn btn-glass-light" data-jump="members">Galería de miembros</button>
-              </div>
             </div>
 
             <div class="mag-pulse-dock" id="portal-pulse-card">
@@ -172,14 +172,24 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
               <div class="chart-box tall" id="analyst-channel-wrap"><canvas id="analyst-channel-chart"></canvas></div>
             </article>
 
-            <article class="editorial-card">
+            <article class="editorial-card" id="analyst-type-card">
               <div class="card-head">
                 <div>
-                  <h2>Estado de participación</h2>
-                  <p>Distribución actual de la comunidad</p>
+                  <h2>Formatos de actividad en vivo</h2>
+                  <p>Proporción dinámica entre publicaciones, comentarios, mensajes y reacciones</p>
                 </div>
               </div>
-              <div class="chart-box tall"><canvas id="analyst-status-chart"></canvas></div>
+              <div class="chart-box tall"><canvas id="analyst-type-chart"></canvas></div>
+            </article>
+
+            <article class="editorial-card span-2">
+              <div class="card-head">
+                <div>
+                  <h2>Estado de participación de miembros</h2>
+                  <p>Distribución actual de la comunidad entre activos, en riesgo e inactivos</p>
+                </div>
+              </div>
+              <div class="chart-box"><canvas id="analyst-status-chart"></canvas></div>
             </article>
           </div>
 
@@ -247,7 +257,10 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
             </article>
 
             <aside class="editorial-card geo-summary-card">
-              <div class="privacy-callout" id="analyst-privacy-callout">
+              <div id="analyst-city-inspector" class="city-inspector-card">
+                <div class="empty-state compact">Haz clic en cualquier punto o zona del mapa para inspeccionar sus datos.</div>
+              </div>
+              <div class="privacy-callout" id="analyst-privacy-callout" style="margin-top:14px">
                 Verificando privacidad de miembros…
               </div>
               <h3>Volar a ciudades destacadas</h3>
@@ -417,13 +430,14 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
 
   function renderFeedCard(item, isLiveNew = false) {
     const sent = formatSentiment(item.sentimiento);
+    const authorLabel = item.alias_usuario || 'Miembro de la comunidad';
     return `
       <article class="feed-post-card ${isLiveNew ? 'live-flash' : ''}" data-feed-id="${escapeHtml(item.id_interaccion)}">
         <div class="feed-post-head">
           <div class="feed-author">
-            ${avatarHtml(item.id_usuario, 'sm')}
+            ${avatarHtml(authorLabel, 'sm')}
             <div>
-              <strong>Miembro ${escapeHtml(item.id_usuario)}</strong>
+              <strong>${escapeHtml(authorLabel)}</strong>
               <small>${escapeHtml(item.canal || 'Comunidad')} · ${escapeHtml(formatDateTime(item.timestamp))}</small>
             </div>
           </div>
@@ -500,6 +514,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
   $('#analyst-map-reset').addEventListener('click', () => resetMapBounds());
   $('#analyst-switch-btn').addEventListener('click', onSwitchAccount);
   $('#analyst-rail-switch').addEventListener('click', onSwitchAccount);
+  $('#analyst-theme-toggle')?.addEventListener('click', () => onToggleColorMode?.());
   $('#analyst-pwd-btn').addEventListener('click', () => openChangePasswordModal({ api, toast }));
 
   async function loadCatalogs() {
@@ -694,6 +709,18 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       }</div>`;
     }
 
+    const typesList = Array.isArray(d.por_tipo) && d.por_tipo.length ? d.por_tipo : [];
+    renderChart(
+      'analyst-type-chart',
+      buildDoughnutConfig({
+        labels: typesList.length
+          ? typesList.map((x) => `${formatActivityType(x.tipo).label} (${x.tasa_participacion}%)`)
+          : ['Sin datos'],
+        data: typesList.length ? typesList.map((x) => x.total) : [1],
+        colors: ['#ee6c4d', '#2a6b55', '#c98a2c', '#0f5e6b', '#7c6ee6'],
+      })
+    );
+
     renderChart(
       'analyst-status-chart',
       buildDoughnutConfig({
@@ -706,7 +733,10 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
     renderRankedBars('analyst-interests-bars', d.top_intereses, 'total', 'nombre', 'forest');
     renderRankedBars('analyst-species-bars', d.top_especies, 'total', 'nombre', 'gold');
 
-    if (highlightLive) flashElement($('#analyst-channel-card'));
+    if (highlightLive) {
+      flashElement($('#analyst-channel-card'));
+      flashElement($('#analyst-type-card'));
+    }
   }
 
   async function loadTrends() {
@@ -734,9 +764,53 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       .sort((a, b) => b.usuarios - a.usuarios);
   }
 
-  async function loadMap() {
+  function renderAnalystCityInspector(city) {
+    const el = $('#analyst-city-inspector');
+    if (!el || !city) return;
+    const sent = formatSentiment(city.sentimiento);
+    const total = Math.max(1, city.usuarios);
+    const actPct = Math.round((city.activos / total) * 100);
+    const riskPct = Math.round((city.en_riesgo / total) * 100);
+    const inactPct = Math.max(0, 100 - actPct - riskPct);
+    const latStr = `${Math.abs(city.lat).toFixed(2)}° ${city.lat >= 0 ? 'N' : 'S'}`;
+    const lngStr = `${Math.abs(city.lng).toFixed(2)}° ${city.lng >= 0 ? 'E' : 'O'}`;
+
+    el.innerHTML = `
+      <div class="inspector-head">
+        <div>
+          <span class="inspector-kicker">CIUDAD SELECCIONADA</span>
+          <h3>${escapeHtml(city.ciudad)}</h3>
+          <small>${escapeHtml(city.pais)} · ${latStr}, ${lngStr}</small>
+        </div>
+        <span class="pill pill-${sent.tone}">Ánimo ${escapeHtml(sent.score)}</span>
+      </div>
+
+      <div class="inspector-kpis">
+        <div><span>Miembros</span><strong>${formatNumber(city.usuarios)}</strong></div>
+        <div><span>Activos</span><strong>${formatNumber(city.activos)} (${actPct}%)</strong></div>
+        <div><span>En riesgo</span><strong>${formatNumber(city.en_riesgo)}</strong></div>
+        <div><span>Inactivos</span><strong>${formatNumber(city.inactivos)}</strong></div>
+      </div>
+
+      <div class="inspector-bar" title="Proporción Activos / En riesgo / Inactivos">
+        <span style="width:${actPct}%;background:#16a37a"></span>
+        <span style="width:${riskPct}%;background:#f2a900"></span>
+        <span style="width:${inactPct}%;background:#e5566d"></span>
+      </div>
+
+      <button type="button" class="btn btn-editorial-primary btn-sm btn-block" id="analyst-explore-city-btn">
+        Ver miembros de ${escapeHtml(city.ciudad)} →
+      </button>
+    `;
+
+    $('#analyst-explore-city-btn')?.addEventListener('click', () => {
+      openCityMembersModal({ ciudad: city.ciudad, pais: city.pais, api, isAdmin: false, locations, toast });
+    });
+  }
+
+  async function loadMap(preserveView = false) {
     const callout = $('#analyst-privacy-callout');
-    callout.textContent = 'Consultando cobertura comunitaria…';
+    if (!preserveView) callout.textContent = 'Consultando cobertura comunitaria…';
     try {
       const [points, protectedRes, summary] = await Promise.all([
         api('/api/analytics/mapa'),
@@ -746,11 +820,19 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
 
       callout.innerHTML = `
         <strong>Privacidad primero</strong>
-        <p>${formatNumber(protectedRes.total)} miembros eligieron mantener su ubicación privada y están excluidos de este atlas (${formatNumber(points.length)} ubicaciones autorizadas visibles).</p>
+        <p>${formatNumber(protectedRes.total)} miembros eligieron mantener su ubicación privada y están excluidos de este atlas (${formatNumber(points.length)} ubicaciones autorizadas visibles). Haz clic en cualquier ciudad del mapa para explorar a sus miembros.</p>
       `;
-      renderCommunityMap('analyst-map-canvas', points, { theme: mapBasemap, mode: mapLayerMode });
+      renderCommunityMap('analyst-map-canvas', points, {
+        theme: mapBasemap,
+        mode: mapLayerMode,
+        cityActivity: summary?.por_ciudad || [],
+        preserveView,
+        onSelectCity: renderAnalystCityInspector,
+        onExploreCityMembers: (ciudad, pais) =>
+          openCityMembersModal({ ciudad, pais, api, isAdmin: false, locations, toast }),
+      });
 
-      const cities = buildCityCentroids(points).slice(0, 7);
+      const cities = aggregateCitiesFromPoints(points, summary?.por_ciudad || []).slice(0, 7);
       $('#analyst-geo-cities').innerHTML = cities.length
         ? cities
             .map(
@@ -1063,12 +1145,12 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
             <article class="activity-card">
               <div class="activity-card-head">
                 <div class="activity-badges">
-                  <strong>${escapeHtml(item.id_interaccion)}</strong>
+                  <strong>Registro pendiente #${escapeHtml(String(item.id_interaccion || '').replace(/^I0*/, '') || 's/n')}</strong>
                   <span class="pill pill-warning">${escapeHtml(formatReviewReason(item.motivo_rechazo))}</span>
                 </div>
                 <time>${escapeHtml(formatDateTime(item.fecha_cuarentena))}</time>
               </div>
-              <p class="activity-sub">Referencia: <b>${escapeHtml(item.id_usuario_referenciado || 'Desconocido')}</b></p>
+              <p class="activity-sub">Miembro no identificado en la comunidad</p>
               <div class="action-row" style="margin-top:8px">
                 <button type="button" class="btn btn-portal-outline btn-xs analyst-inspect-pending" data-id="${escapeHtml(item.id_interaccion)}">Ver detalle</button>
               </div>
@@ -1136,7 +1218,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       summaryCache = payload;
       applySummaryToHome(payload, activeSection === 'home');
       if (activeSection === 'trends') applySummaryToTrends(payload, true);
-      if (activeSection === 'map') loadMap();
+      if (activeSection === 'map') loadMap(true);
       return;
     }
 

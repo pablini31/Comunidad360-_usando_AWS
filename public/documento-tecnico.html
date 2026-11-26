@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Documento Técnico — COMMUNITY 360</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --bg: #fbf8f3;
+      --paper: #ffffff;
+      --ink: #1f2a37;
+      --muted: #5b6472;
+      --line: #e4ddd0;
+      --coral: #ee6c4d;
+      --teal: #0f5e6b;
+      --forest: #2a6b55;
+      --soft: #f4efe6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Plus Jakarta Sans', 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .toolbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--coral);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-coral { background: var(--coral); color: #fff; }
+    .btn-outline { background: #fff; border-color: var(--line); color: var(--ink); }
+    .sheet {
+      max-width: 980px;
+      margin: 28px auto 64px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 48px 54px;
+      box-shadow: 0 18px 45px -24px rgba(31, 42, 55, 0.2);
+    }
+    .cover-kicker {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: var(--coral);
+      text-transform: uppercase;
+    }
+    h1 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 30px;
+      line-height: 1.12;
+      margin: 8px 0 12px;
+    }
+    h2 {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 19px;
+      margin: 34px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--soft);
+      color: var(--teal);
+    }
+    h3 {
+      font-size: 15px;
+      margin: 20px 0 8px;
+      color: var(--ink);
+    }
+    p { margin: 0 0 10px; }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 20px 0 28px;
+      padding: 14px;
+      background: var(--soft);
+      border-radius: 12px;
+    }
+    .meta-grid div span { display: block; font-size: 10.5px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
+    .meta-grid div strong { font-size: 13px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 12.2px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--soft);
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    code, pre {
+      font-family: Consolas, 'Courier New', monospace;
+      font-size: 11.8px;
+    }
+    pre {
+      background: #faf7f1;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 14px;
+      overflow-x: auto;
+      margin: 8px 0 16px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .formula-box {
+      background: #faf7f1;
+      border-left: 4px solid var(--coral);
+      padding: 12px 16px;
+      border-radius: 0 10px 10px 0;
+      margin: 10px 0 14px;
+    }
+    .formula-box strong { display: block; color: var(--teal); margin-bottom: 4px; }
+    .evidence-slot {
+      border: 2px dashed #d3c9b8;
+      background: #fdfbf7;
+      border-radius: 12px;
+      padding: 22px 18px;
+      text-align: center;
+      color: var(--muted);
+      margin: 12px 0 18px;
+      font-size: 12.5px;
+    }
+    .schema-diagram {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 14px 0 20px;
+    }
+    .schema-box {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fff;
+    }
+    .schema-box h4 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      color: var(--teal);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 5px;
+    }
+    .schema-box ul {
+      margin: 0;
+      padding-left: 16px;
+      font-size: 11.8px;
+    }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none !important; }
+      .sheet {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+      }
+      .page-break { page-break-before: always; }
+    }
+  </style>
+  <script defer src="/modules/reportPrint.js"></script>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="toolbar-brand">
+      <span class="dot"></span>
+      <span>COMMUNITY 360 · DOCUMENTO TÉCNICO FINAL (FASES 1 A 6)</span>
+    </div>
+    <div style="display:flex;gap:10px">
+      <a href="/" class="btn btn-outline">← Volver al Dashboard</a>
+      <button type="button" id="print-pdf-btn" class="btn btn-coral">Imprimir / Guardar como PDF</button>
+    </div>
+  </header>
+
+  <main class="sheet">
+    <span class="cover-kicker">Bases de Datos en la Nube · Unidad III</span>
+    <h1>COMMUNITY 360: Arquitectura de Datos Híbrida en la Nube y Dashboard Analítico en Tiempo Real</h1>
+    <p>Persistencia híbrida SQL + NoSQL en AWS (Amazon RDS for MariaDB + Amazon DynamoDB), proceso ETL con anonimización por privacidad, autenticación JWT/RBAC, API REST validada y consumo reactivo mediante WebSockets.</p>
+
+    <div class="meta-grid">
+      <div><span>Asignatura</span><strong>Bases de Datos en la Nube</strong></div>
+      <div><span>Arquitectura Cloud</span><strong>AWS RDS MariaDB + DynamoDB</strong></div>
+      <div><span>Región AWS</span><strong>us-east-2 (Ohio · Free Tier)</strong></div>
+      <div><span>Tiempo Real</span><strong>REST + Socket.io WebSockets</strong></div>
+    </div>
+
+    <h2>1. Contextualización y Condición Obligatoria de Privacidad</h2>
+    <p>La comunidad virtual y presencial <strong>Community 360</strong> integra información proveniente de dos archivos CSV fuente: <code>comunidad_virtual_usuarios.csv</code> (<strong>1,068 registros</strong>) y <code>comunidad_virtual_1000_interacciones.csv</code> (<strong>1,000 registros</strong>). Los archivos originales presentaban fechas heterogéneas (<code>DD/MM/YYYY</code>), reacciones sin texto con longitud distinta de cero, etiquetas multivaluadas separadas por <code>|</code> y <strong>793 interacciones</strong> cuyo <code>id_usuario</code> no existía en el padrón.</p>
+    <p><strong>Cumplimiento de privacidad (<code>consentimiento_datos = "no"</code>):</strong> Los <strong>171 miembros</strong> que no autorizaron compartir su ubicación tienen su país, estado, ciudad, zona horaria, latitud y longitud eliminados (<code>NULL</code>) tanto en el proceso ETL como mediante triggers <code>BEFORE INSERT</code> / <code>BEFORE UPDATE</code> en MariaDB y filtros de proyección en la API REST y en el mapa de calor.</p>
+
+    <h2>2. Exploración Tecnológica y Comparativa SQL vs. NoSQL (Fase 1)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Criterio Técnico</th>
+          <th>SQL — Amazon RDS for MariaDB</th>
+          <th>NoSQL — Amazon DynamoDB</th>
+          <th>Justificación en Community 360</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Estructura y Relaciones</strong></td>
+          <td>Esquema normalizado en 3FN (<code>paises</code>, <code>estados</code>, <code>ciudades</code>, <code>usuarios</code>).</td>
+          <td>Documentos JSON flexibles con listas nativas (<code>etiquetas</code>) y mapas opcionales (<code>ubicacion</code>).</td>
+          <td>Evita redundancia en el padrón y permite atributos opcionales en interacciones.</td>
+        </tr>
+        <tr>
+          <td><strong>Integridad Referencial</strong></td>
+          <td>Llaves foráneas (<code>FOREIGN KEY</code>), restricciones <code>CHECK</code> y triggers.</td>
+          <td>Validada en el ETL y en la API antes de escribir en DynamoDB.</td>
+          <td>Las 793 interacciones sin usuario válido se derivan a <code>community360_cuarentena</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Consultas y Agregaciones</strong></td>
+          <td>Consultas analíticas con <code>JOIN</code>, <code>GROUP BY</code>, <code>AVG</code>, <code>SUM</code>.</td>
+          <td>Lecturas por clave primaria y GSIs (<code>gsi_canal_fecha</code>, <code>gsi_usuario_fecha</code>).</td>
+          <td>Consultas históricas paginadas por cursor y resumen híbrido con caché TTL.</td>
+        </tr>
+        <tr>
+          <td><strong>Costos y Límites Cloud</strong></td>
+          <td>RDS <code>db.t3.micro</code> Free Tier con pool de 5 conexiones TLS.</td>
+          <td>Capa gratuita aprovisionada en <strong>5 RCU / 5 WCU</strong> con backoff exponencial.</td>
+          <td>Operación 100% dentro de la capa gratuita de AWS sin estrangulamiento.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Diagrama de Arquitectura de Datos Híbrida (SQL 3FN + NoSQL Documental)</h3>
+    <div class="schema-diagram">
+      <div class="schema-box">
+        <h4>Catálogo 3FN (MariaDB)</h4>
+        <ul>
+          <li><strong>paises:</strong> <code>pais_id (PK)</code>, <code>nombre (UK)</code></li>
+          <li><strong>estados:</strong> <code>estado_id (PK)</code>, <code>pais_id (FK)</code>, <code>nombre</code></li>
+          <li><strong>ciudades:</strong> <code>ciudad_id (PK)</code>, <code>estado_id (FK)</code>, <code>nombre</code>, <code>zona_horaria</code></li>
+        </ul>
+      </div>
+      <div class="schema-box">
+        <h4>Padrón y Seguridad (MariaDB)</h4>
+        <ul>
+          <li><strong>usuarios (1,068):</strong> <code>id_usuario (PK)</code>, <code>alias (UK)</code>, <code>ciudad_id (FK NULL)</code>, <code>latitud/longitud (NULL si no consiente)</code>, <code>estatus</code>, <code>sentimiento_promedio</code>, <code>consentimiento_datos</code></li>
+          <li><strong>administradores_auth:</strong> <code>admin_id (PK)</code>, <code>username</code>, <code>password_hash (bcrypt)</code>, <code>rol</code></li>
+          <li><strong>bitacora_etl:</strong> auditoría de corridas ETL</li>
+        </ul>
+      </div>
+      <div class="schema-box">
+        <h4>Colecciones (DynamoDB)</h4>
+        <ul>
+          <li><strong>community360_interacciones (207):</strong> <code>id_interaccion (PK)</code>, GSIs <code>gsi_usuario_fecha</code> y <code>gsi_canal_fecha</code>, <code>tipo</code>, <code>texto</code>, <code>sentimiento</code>, <code>reacciones_recibidas</code>, <code>etiquetas[]</code>, <code>ubicacion{}</code></li>
+          <li><strong>community360_cuarentena (793):</strong> <code>id_interaccion (PK)</code>, GSI <code>gsi_motivo_fecha</code>, <code>registro_original{}</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="page-break"></div>
+    <h2>3. Fase 2 — Limpieza, Transformación y Carga (ETL)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Entidad Procesada</th>
+          <th>Leídos (CSV Raw)</th>
+          <th>Duplicados</th>
+          <th>Anonimizados (<code>consentimiento='no'</code>)</th>
+          <th>Transformados</th>
+          <th>Cargados Válidos</th>
+          <th>En Cuarentena</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Usuarios (MariaDB)</strong></td>
+          <td>1,068</td>
+          <td>0</td>
+          <td><strong>171</strong></td>
+          <td>1,068</td>
+          <td><strong>1,068</strong></td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td><strong>Interacciones (DynamoDB)</strong></td>
+          <td>1,000</td>
+          <td>0</td>
+          <td><strong>31</strong></td>
+          <td>207</td>
+          <td><strong>207</strong></td>
+          <td><strong>793</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Ejemplo Real de Registro Antes y Después de Anonimización (Miembro AshCh'a30)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Campo del Perfil</th>
+          <th>Antes (Archivo Fuente — con ubicación no autorizada)</th>
+          <th>Después (Persistido en Nube — ubicación eliminada)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Alias del miembro</strong></td><td>AshCh'a30</td><td>AshCh'a30</td></tr>
+        <tr><td><strong>Fecha de ingreso</strong></td><td>06/04/2026 (formato heterogéneo)</td><td>2026-04-06 (estándar ISO 8601)</td></tr>
+        <tr><td><strong>Autorización de ubicación</strong></td><td>No autorizada</td><td>No autorizada (Protegida)</td></tr>
+        <tr><td><strong>País / Estado / Ciudad</strong></td><td>México · Nuevo León · Monterrey</td><td><strong>Eliminado (Nulo)</strong></td></tr>
+        <tr><td><strong>Coordenadas geográficas</strong></td><td>25.6866, -100.3161</td><td><strong>Eliminadas (Nulas)</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Fases 3, 4 y 5 — Autenticación, API REST y WebSockets</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Método</th>
+          <th>Endpoint REST</th>
+          <th>Códigos HTTP</th>
+          <th>Función y Evento WebSocket Emitido</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><code>POST</code></td><td><code>/api/auth/login</code></td><td><code>200, 401, 429</code></td><td>Valida bcrypt contra MariaDB y emite JWT.</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/interacciones</code></td><td><code>200, 400, 401</code></td><td>Consulta histórica paginada vía GSIs filtrando ubicaciones no autorizadas.</td></tr>
+        <tr><td><code>POST</code></td><td><code>/api/interacciones</code></td><td><code>201, 409, 422</code></td><td>Valida usuario en MariaDB y privacidad; emite <code>interaccion:creada</code> + <code>analytics:actualizado</code>.</td></tr>
+        <tr><td><code>PUT / PATCH</code></td><td><code>/api/interacciones/:id</code></td><td><code>200, 400, 404</code></td><td>Actualiza en DynamoDB; emite <code>interaccion:actualizada</code> + <code>analytics:actualizado</code>.</td></tr>
+        <tr><td><code>DELETE</code></td><td><code>/api/interacciones/:id</code></td><td><code>200, 404</code></td><td>Elimina en DynamoDB; emite <code>interaccion:eliminada</code> + <code>analytics:actualizado</code>.</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/analytics/resumen</code></td><td><code>200</code></td><td>KPIs e indicadores dinámicos híbridos (MariaDB + DynamoDB).</td></tr>
+        <tr><td><code>GET</code></td><td><code>/api/analytics/mapa</code></td><td><code>200</code></td><td>Coordenadas autorizadas (793 puntos; 171 excluidos por privacidad).</td></tr>
+      </tbody>
+    </table>
+
+    <h2>5. Fase 6 — Definición Matemática de Indicadores Dinámicos</h2>
+    <div class="formula-box">
+      <strong>1. Total de Actividad ($N$) y Promedio de Reacciones ($\bar{r}$):</strong>
+      <code>N = |I|</code> &nbsp;|&nbsp; <code>r̄ = (1 / N) · Σ r_i</code>
+    </div>
+    <div class="formula-box">
+      <strong>2. Sentimiento Promedio de Actividad ($\bar{s}_{\text{act}}$) y Tasa de Positividad ($P_{+}$):</strong>
+      <code>s̄_act = (1 / N_s) · Σ s_i</code> (donde <code>s_i ∈ [-1, 1]</code>) &nbsp;|&nbsp; <code>P_+ = (|{i ∈ I : s_i ≥ 0.05}| / N_s) × 100%</code>
+    </div>
+    <div class="formula-box">
+      <strong>3. Participación por Canal ($T_c$ — Gráfica de Barras) y por Tipo ($T_t$ — Gráfica de Dona):</strong>
+      <code>T_c = (n_c / N) × 100%</code> &nbsp;|&nbsp; <code>T_t = (n_t / N) × 100%</code> (ambas recalculadas en vivo vía WebSockets)
+    </div>
+    <div class="formula-box">
+      <strong>4. Intensidad Dinámica del Mapa de Calor (<code>leaflet.heat</code>):</strong>
+      <code>w_k = min(1.0, max(0.28, (s_k + 1)/2 + min(0.28, 0.08 · ln(1 + a_ciudad(k)))))</code> (solo para miembros con <code>consentimiento_datos = 'si'</code>)
+    </div>
+
+    <h2>6. Evidencias de Ejecución (Espacios para Capturas en tu Entrega)</h2>
+    <div class="evidence-slot">Evidencia 1: Captura de Tablas en AWS (RDS MariaDB 1,068 usuarios + DynamoDB 207 interacciones y 793 cuarentena)</div>
+    <div class="evidence-slot">Evidencia 2: Petición POST / PUT / DELETE en Postman + Respuesta HTTP (201 / 200) + Cambio en vivo en el Dashboard</div>
+  </main>
+</body>
+</html>

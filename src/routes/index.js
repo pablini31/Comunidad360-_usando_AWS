@@ -137,12 +137,21 @@ async function filterUnauthorizedLocations(items) {
   if (!items.length) return items;
   const ids = [...new Set(items.map((item) => item.id_usuario).filter(Boolean))];
   if (!ids.length) return items.map((item) => withoutLocation(item));
-  const [allowedRows] = await pool.query(
-    `SELECT id_usuario FROM usuarios WHERE consentimiento_datos='si' AND id_usuario IN (${ids.map(() => '?').join(',')})`,
+  const [userRows] = await pool.query(
+    `SELECT id_usuario, alias, consentimiento_datos FROM usuarios WHERE id_usuario IN (${ids.map(() => '?').join(',')})`,
     ids
   );
-  const allowed = new Set(allowedRows.map((row) => row.id_usuario));
-  return items.map((item) => (allowed.has(item.id_usuario) ? item : withoutLocation(item)));
+  const allowed = new Set();
+  const aliasMap = new Map();
+  for (const row of userRows) {
+    aliasMap.set(row.id_usuario, row.alias);
+    if (row.consentimiento_datos === 'si') allowed.add(row.id_usuario);
+  }
+  return items.map((item) => {
+    const base = allowed.has(item.id_usuario) ? { ...item } : withoutLocation(item);
+    if (aliasMap.has(item.id_usuario)) base.alias_usuario = aliasMap.get(item.id_usuario);
+    return base;
+  });
 }
 
 async function filterQuarantinePrivacy(items) {
@@ -192,7 +201,12 @@ async function saveQuarantine(item, allowSameDeletion = false) {
   }
 }
 
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'community360', timestamp: new Date().toISOString() });
+});
+
 router.post('/auth/login', loginLimit, validate(S.login), authController.login);
+router.post('/auth/register', loginLimit, validate(S.admin), authController.register);
 router.use(auth);
 router.get('/auth/me', authController.me);
 router.post('/auth/change-password', validate(S.changePassword), authController.changePassword);
@@ -316,6 +330,10 @@ function buildUserFilter(q) {
   add('es_artista', 'es_artista');
   add('consentimiento_datos', 'consentimiento_datos');
   add('ciudad_id', 'ciudad_id');
+  if (q.ciudad_nombre) {
+    conditions.push('c.nombre = ?');
+    values.push(q.ciudad_nombre);
+  }
   if (q.pais_id) {
     conditions.push('c.estado_id IN (SELECT estado_id FROM estados WHERE pais_id = ?)');
     values.push(q.pais_id);
@@ -542,7 +560,7 @@ router.post(
   validate(S.interaction),
   asyncRoute(async (req, res) => {
     const input = req.body;
-    const [users] = await pool.execute('SELECT consentimiento_datos FROM usuarios WHERE id_usuario=?', [input.id_usuario]);
+    const [users] = await pool.execute('SELECT alias, consentimiento_datos FROM usuarios WHERE id_usuario=?', [input.id_usuario]);
     if (!users.length) {
       if (req.query.allowQuarantine !== 'true') {
         return res.status(422).json({ error: 'El identificador de miembro indicado no existe.' });
@@ -580,15 +598,16 @@ router.post(
       throw err;
     }
 
-    const [latest] = await pool.execute('SELECT consentimiento_datos FROM usuarios WHERE id_usuario=?', [input.id_usuario]);
+    const [latest] = await pool.execute('SELECT alias, consentimiento_datos FROM usuarios WHERE id_usuario=?', [input.id_usuario]);
     if (!latest.length || latest[0].consentimiento_datos === 'no') {
       await ddb.redactInteraction(clean.id_interaccion);
       clean.ubicacion_autorizada = false;
       delete clean.ubicacion;
     }
+    const enriched = { ...clean, alias_usuario: latest[0]?.alias || users[0]?.alias };
 
-    await emitInteractionChange('interaccion:creada', { item: clean });
-    res.status(201).json({ message: 'Interacción creada correctamente.', item: clean });
+    await emitInteractionChange('interaccion:creada', { item: enriched });
+    res.status(201).json({ message: 'Interacción creada correctamente.', item: enriched });
   })
 );
 
@@ -624,7 +643,7 @@ async function handleUpdateInteraction(req, res) {
     });
   }
 
-  const [users] = await pool.execute('SELECT consentimiento_datos FROM usuarios WHERE id_usuario=?', [
+  const [users] = await pool.execute('SELECT alias, consentimiento_datos FROM usuarios WHERE id_usuario=?', [
     validated.data.id_usuario,
   ]);
   if (!users.length) {
@@ -641,15 +660,16 @@ async function handleUpdateInteraction(req, res) {
     throw err;
   }
 
-  const [latest] = await pool.execute('SELECT consentimiento_datos FROM usuarios WHERE id_usuario=?', [clean.id_usuario]);
+  const [latest] = await pool.execute('SELECT alias, consentimiento_datos FROM usuarios WHERE id_usuario=?', [clean.id_usuario]);
   if (!latest.length || latest[0].consentimiento_datos === 'no') {
     await ddb.redactInteraction(clean.id_interaccion);
     clean.ubicacion_autorizada = false;
     delete clean.ubicacion;
   }
+  const enriched = { ...clean, alias_usuario: latest[0]?.alias || users[0]?.alias };
 
-  await emitInteractionChange('interaccion:actualizada', { item: clean });
-  res.status(200).json({ message: 'Interacción actualizada correctamente.', item: clean });
+  await emitInteractionChange('interaccion:actualizada', { item: enriched });
+  res.status(200).json({ message: 'Interacción actualizada correctamente.', item: enriched });
 }
 
 router.put('/interacciones/:id', adminOnly('admin'), validate(S.interactionPatch), asyncRoute(handleUpdateInteraction));

@@ -83,12 +83,14 @@ const TYPE_MAP = {
   publicacion: { label: 'Publicación', tone: 'emerald' },
   mensaje: { label: 'Mensaje', tone: 'indigo' },
   respuesta: { label: 'Respuesta', tone: 'teal' },
+  respuesta_encuesta: { label: 'Encuesta', tone: 'teal' },
+  rsvp_evento: { label: 'Asistencia a evento', tone: 'violet' },
   compartido: { label: 'Compartido', tone: 'violet' },
 };
 
 export function formatActivityType(type) {
   const key = String(type || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return TYPE_MAP[key] || { label: capitalize(type || 'Actividad'), tone: 'neutral' };
+  return TYPE_MAP[key] || { label: capitalize(String(type || 'Actividad').replaceAll('_', ' ')), tone: 'neutral' };
 }
 
 export function activityTypeBadge(type) {

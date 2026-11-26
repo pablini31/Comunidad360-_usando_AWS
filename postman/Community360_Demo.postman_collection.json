@@ -13,12 +13,12 @@
     },
     {
       "key": "username",
-      "value": "admin_c360",
+      "value": "admin",
       "type": "string"
     },
     {
       "key": "password",
-      "value": "REEMPLAZAR_POR_TU_CLAVE_ADMIN",
+      "value": "1234",
       "type": "string"
     },
     {

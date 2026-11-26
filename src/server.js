@@ -10,7 +10,13 @@ let closing = false;
 
 async function start() {
   try {
-    await pool.query('SELECT 1');
+    try {
+      await pool.query('SELECT 1');
+    } catch (err) {
+      console.warn(
+        `Aviso inicial MariaDB (${err.code || err.name || 'WARN'}): el servidor HTTP iniciará y reconectará bajo demanda.`
+      );
+    }
     server = http.createServer(app);
     initRealtime(server);
     server.listen(env.port, () =>
@@ -25,7 +31,7 @@ async function start() {
     });
   } catch (err) {
     console.error(
-      `No se pudo conectar a MariaDB para iniciar (${err.code || err.name || 'ERROR'}). Revisa la configuración y la conectividad.`
+      `No se pudo iniciar el servidor (${err.code || err.name || 'ERROR'}). Revisa la configuración y la conectividad.`
     );
     await pool.end().catch(() => {});
     client.destroy();

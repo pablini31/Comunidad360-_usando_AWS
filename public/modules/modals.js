@@ -599,8 +599,8 @@ export function openNewAccountModal({ api, onCreated, toast }) {
         </label>
         <label class="field-group">
           <span>Contraseña inicial</span>
-          <input name="password" type="password" minlength="8" placeholder="Mínimo 8 caracteres" required>
-          <small class="field-hint">Incluye mayúscula, minúscula y número.</small>
+          <input name="password" type="password" minlength="4" placeholder="Mínimo 4 caracteres (ej. 1234)" required>
+          <small class="field-hint">Mínimo 4 caracteres.</small>
         </label>
         <label class="field-group">
           <span>Perfil de acceso</span>
@@ -631,8 +631,8 @@ export function openNewAccountModal({ api, onCreated, toast }) {
       errBox.classList.remove('hidden');
       return;
     }
-    if (!/^(?=.{8,}$)(?=.*[A-Z])(?=.*[a-z])(?=.*\d)/.test(payload.password)) {
-      errBox.textContent = 'La contraseña debe tener 8+ caracteres con mayúscula, minúscula y número.';
+    if ((payload.password || '').length < 4) {
+      errBox.textContent = 'La contraseña debe tener al menos 4 caracteres.';
       errBox.classList.remove('hidden');
       return;
     }
@@ -654,11 +654,80 @@ export function openNewAccountModal({ api, onCreated, toast }) {
   });
 }
 
+export async function openCityMembersModal({ ciudad, pais, api, isAdmin = false, locations = [], toast, onSaved }) {
+  openModal(
+    `
+      <div class="modal-header-block">
+        <h2>Miembros en ${escapeHtml(ciudad)}</h2>
+        <p class="modal-sub">${escapeHtml(pais)} · Perfiles con ubicación compartida de forma autorizada</p>
+      </div>
+      <div id="city-members-modal-list" class="loading-row">Consultando miembros de ${escapeHtml(ciudad)}…</div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-outline" data-close-modal>Cerrar</button>
+      </div>
+    `,
+    { wide: true }
+  );
+
+  const host = document.getElementById('city-members-modal-list');
+  try {
+    const data = await api(
+      `/api/usuarios?ciudad_nombre=${encodeURIComponent(ciudad)}&consentimiento_datos=si&limit=60`
+    );
+    const items = data.items || [];
+    if (!items.length) {
+      host.className = 'empty-state compact';
+      host.textContent = 'No se encontraron miembros con ubicación visible en esta ciudad.';
+      return;
+    }
+    host.className = 'city-modal-grid';
+    host.innerHTML = items
+      .map((u) => {
+        const sent = formatSentiment(u.sentimiento_promedio);
+        return `
+          <article class="city-member-row" data-city-uid="${escapeHtml(u.id_usuario)}">
+            <div class="member-cell">
+              ${avatarHtml(u.alias, 'sm')}
+              <div>
+                <strong>${escapeHtml(u.alias)}</strong>
+                <small>${escapeHtml(u.interes_principal || 'Comunidad')} · ${escapeHtml(u.plataforma_principal)}</small>
+              </div>
+            </div>
+            <div class="action-row">
+              ${statusBadge(u.estatus)}
+              <span class="pill pill-${sent.tone}">${escapeHtml(sent.score)}</span>
+              <button type="button" class="btn btn-subtle btn-xs city-open-profile" data-uid="${escapeHtml(u.id_usuario)}">Ver perfil</button>
+            </div>
+          </article>
+        `;
+      })
+      .join('');
+
+    host.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.city-open-profile') || e.target.closest('[data-city-uid]');
+      if (!btn) return;
+      const uid = btn.dataset.uid || btn.dataset.cityUid;
+      try {
+        const detail = await api(`/api/usuarios/${encodeURIComponent(uid)}`);
+        openMemberDetailModal(detail, {
+          isAdmin,
+          onEdit: isAdmin ? (editId) => openMemberFormModal({ id: editId, api, locations, toast, onSaved }) : undefined,
+        });
+      } catch (err) {
+        toast?.(err.message, true);
+      }
+    });
+  } catch (err) {
+    host.className = 'inline-notice warning';
+    host.textContent = err.message || 'No fue posible cargar los miembros de esta ciudad.';
+  }
+}
+
 export function openChangePasswordModal({ api, toast }) {
   openModal(`
     <div class="modal-header-block">
       <h2>Actualizar contraseña</h2>
-      <p class="modal-sub">Usa al menos 8 caracteres combinando mayúsculas, minúsculas y números.</p>
+      <p class="modal-sub">Ingresa tu contraseña actual y define una nueva (mínimo 4 caracteres).</p>
     </div>
     <form id="change-password-form" novalidate>
       <div class="form-grid">
@@ -668,7 +737,7 @@ export function openChangePasswordModal({ api, toast }) {
         </label>
         <label class="field-group">
           <span>Nueva contraseña</span>
-          <input name="newPassword" type="password" minlength="8" required autocomplete="new-password">
+          <input name="newPassword" type="password" minlength="4" required autocomplete="new-password">
         </label>
       </div>
       <div id="password-form-error" class="form-alert error hidden" role="alert"></div>
@@ -687,8 +756,8 @@ export function openChangePasswordModal({ api, toast }) {
     e.preventDefault();
     errBox.classList.add('hidden');
     const payload = Object.fromEntries(new FormData(form));
-    if (!/^(?=.{8,}$)(?=.*[A-Z])(?=.*[a-z])(?=.*\d)/.test(payload.newPassword || '')) {
-      errBox.textContent = 'La nueva contraseña debe incluir mayúscula, minúscula, número y 8+ caracteres.';
+    if ((payload.newPassword || '').length < 4) {
+      errBox.textContent = 'La nueva contraseña debe tener al menos 4 caracteres.';
       errBox.classList.remove('hidden');
       return;
     }
