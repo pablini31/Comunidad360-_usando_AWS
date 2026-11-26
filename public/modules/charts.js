@@ -26,7 +26,7 @@ export function renderChart(canvasOrId, config) {
   return chart;
 }
 
-export function buildDoughnutConfig({ labels, data, colors, cutout = '66%' }) {
+export function buildDoughnutConfig({ labels, data, colors, cutout = '68%', dark = false }) {
   return {
     type: 'doughnut',
     data: {
@@ -35,9 +35,9 @@ export function buildDoughnutConfig({ labels, data, colors, cutout = '66%' }) {
         {
           data,
           backgroundColor: colors,
-          borderColor: '#ffffff',
+          borderColor: dark ? '#11123b' : '#ffffff',
           borderWidth: 2,
-          hoverOffset: 6,
+          hoverOffset: 7,
         },
       ],
     },
@@ -53,25 +53,25 @@ export function buildDoughnutConfig({ labels, data, colors, cutout = '66%' }) {
             pointStyle: 'circle',
             padding: 16,
             boxWidth: 9,
-            font: { family: "'Plus Jakarta Sans', sans-serif", size: 12, weight: '500' },
-            color: '#475569',
+            font: { family: "'Space Grotesk', sans-serif", size: 12, weight: '500' },
+            color: dark ? '#cbd5f5' : '#4a453e',
           },
         },
         tooltip: {
-          backgroundColor: '#0f172a',
-          padding: 10,
+          backgroundColor: dark ? '#090a18' : '#1b1917',
+          padding: 11,
           cornerRadius: 8,
-          titleFont: { family: "'Plus Jakarta Sans', sans-serif", size: 12, weight: '700' },
-          bodyFont: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
+          titleFont: { family: "'Space Grotesk', sans-serif", size: 12, weight: '700' },
+          bodyFont: { family: "'Space Grotesk', sans-serif", size: 12 },
         },
       },
     },
   };
 }
 
-export function buildBarConfig({ labels, data, color, horizontal = false, yFormat, valueSuffix = '' }) {
-  const gridColor = '#e9eef5';
-  const tickColor = '#64748b';
+export function buildBarConfig({ labels, data, color, horizontal = false, yFormat, valueSuffix = '', dark = false }) {
+  const gridColor = dark ? 'rgba(255, 255, 255, 0.08)' : '#eae4db';
+  const tickColor = dark ? '#a8b0d8' : '#6b6359';
   return {
     type: 'bar',
     data: {
@@ -80,7 +80,7 @@ export function buildBarConfig({ labels, data, color, horizontal = false, yForma
         {
           data,
           backgroundColor: color,
-          borderRadius: 7,
+          borderRadius: 6,
           borderSkipped: false,
           maxBarThickness: 38,
         },
@@ -93,8 +93,8 @@ export function buildBarConfig({ labels, data, color, horizontal = false, yForma
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#0f172a',
-          padding: 10,
+          backgroundColor: dark ? '#090a18' : '#1b1917',
+          padding: 11,
           cornerRadius: 8,
           callbacks: {
             label: (ctx) => {
@@ -111,7 +111,7 @@ export function buildBarConfig({ labels, data, color, horizontal = false, yForma
           border: { display: false },
           ticks: {
             color: tickColor,
-            font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 },
+            font: { family: "'Space Grotesk', sans-serif", size: 11 },
           },
         },
         y: {
@@ -119,7 +119,7 @@ export function buildBarConfig({ labels, data, color, horizontal = false, yForma
           border: { display: false },
           ticks: {
             color: tickColor,
-            font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 },
+            font: { family: "'Space Grotesk', sans-serif", size: 11 },
             ...(yFormat && !horizontal ? { callback: yFormat } : {}),
           },
         },

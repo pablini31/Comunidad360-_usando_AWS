@@ -14,7 +14,14 @@ import {
   formatSentiment,
   statusBadge,
 } from './format.js';
-import { destroyMap, renderCommunityMap, setMapLayerMode } from './map.js';
+import {
+  destroyMap,
+  flyToLocation,
+  renderCommunityMap,
+  resetMapBounds,
+  setMapBasemap,
+  setMapLayerMode,
+} from './map.js';
 import {
   openChangePasswordModal,
   openLinkPendingModal,
@@ -24,15 +31,6 @@ import {
   openPendingDetailModal,
 } from './modals.js';
 
-const SECTION_META = {
-  overview: { crumb: 'Panel de control', title: 'Estudio de gestión comunitaria' },
-  users: { crumb: 'Directorio', title: 'Miembros de la comunidad' },
-  activity: { crumb: 'Actividad en vivo', title: 'Publicaciones y reacciones' },
-  map: { crumb: 'Cobertura', title: 'Mapa de calor comunitario' },
-  review: { crumb: 'Control de calidad', title: 'Revisión e historial de importaciones' },
-  accounts: { crumb: 'Acceso', title: 'Cuentas y permisos' },
-};
-
 export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
   let activeView = 'overview';
   let locations = [];
@@ -41,391 +39,432 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
   let activityCursor = null;
   let reviewCursor = null;
   let summaryCache = null;
+  let mapPointsCache = [];
   let mapLayerMode = 'both';
+  let mapBasemap = 'light';
 
   root.innerHTML = `
-    <div class="admin-shell" data-experience="admin">
-      <aside class="admin-sidebar">
-        <div class="admin-brand">
-          <div class="brand-emblem light-accent"><span>C</span><em>360</em></div>
-          <div class="brand-text">
-            <strong>Community 360</strong>
-            <small>Estudio de Operaciones</small>
-          </div>
-        </div>
+    <div class="studio-shell" data-experience="admin">
+      <!-- BARRA EDITORIAL SUPERIOR DE MANDO (INSPIRADA EN SPIINOFF + EDSPORTLINE) -->
+      <header class="studio-header">
+        <div class="studio-header-inner">
+          <button type="button" class="studio-brand" id="studio-brand-home">
+            <span class="wordmark-dot"></span>
+            <strong>COMMUNITY 360</strong>
+            <em>ESTUDIO</em>
+          </button>
 
-        <div class="side-group-label">GESTIÓN</div>
-        <nav class="admin-nav" id="admin-nav">
-          <button type="button" data-view="overview" class="active">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-            <span>Panel de control</span>
-          </button>
-          <button type="button" data-view="users">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>Miembros</span>
-          </button>
-          <button type="button" data-view="activity">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>Actividad</span>
-          </button>
-          <button type="button" data-view="map">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span>Mapa de calor</span>
-          </button>
-          <button type="button" data-view="review">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-            <span>Revisión e historial</span>
-          </button>
-          <button type="button" data-view="accounts">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>Cuentas de acceso</span>
-          </button>
-        </nav>
+          <nav class="studio-nav" id="admin-nav" aria-label="Navegación operativa">
+            <button type="button" data-view="overview" class="active">CONTROL</button>
+            <button type="button" data-view="users">MIEMBROS</button>
+            <button type="button" data-view="activity">ACTIVIDAD</button>
+            <button type="button" data-view="map">MAPA</button>
+            <button type="button" data-view="review">REVISIÓN</button>
+            <button type="button" data-view="accounts">ACCESOS</button>
+          </nav>
 
-        <div class="admin-side-footer">
-          <div class="side-user-card">
-            ${avatarHtml(profile.username, 'sm')}
-            <div class="side-user-info">
-              <strong>${escapeHtml(profile.username)}</strong>
-              <small>${escapeHtml(formatRole(profile.rol))}</small>
-            </div>
-          </div>
-          <button type="button" class="side-switch-btn" id="admin-side-switch">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
-            <span>Cambiar de cuenta</span>
-          </button>
-        </div>
-      </aside>
-
-      <div class="admin-main">
-        <header class="admin-topbar">
-          <div>
-            <p class="eyebrow">ESTUDIO OPERATIVO · <span id="admin-crumb">PANEL DE CONTROL</span></p>
-            <h1 id="admin-page-title">Estudio de gestión comunitaria</h1>
-          </div>
-          <div class="topbar-actions">
-            <span class="live-pill connecting" id="admin-live-status" title="Estado de actualización en tiempo real">
-              <i class="live-dot"></i><span>Conectando…</span>
+          <div class="studio-actions">
+            <span class="live-pill dark-live connecting" id="admin-live-status" title="Estado de actualización en vivo">
+              <i class="live-dot"></i><span>Conectando</span>
             </span>
-            <span class="role-chip admin">Administrador</span>
-            <button type="button" class="btn btn-outline btn-sm" id="admin-change-pwd">Cambiar contraseña</button>
-            <button type="button" class="btn btn-subtle btn-sm" id="admin-top-switch">Cambiar de cuenta</button>
+            <div class="studio-user-chip">
+              ${avatarHtml(profile.username, 'xs')}
+              <span>${escapeHtml(profile.username)}</span>
+            </div>
+            <button type="button" class="btn btn-studio-ghost btn-sm" id="admin-change-pwd">Clave</button>
+            <button type="button" class="btn btn-gold btn-sm" id="admin-top-switch">Cambiar de cuenta</button>
           </div>
-        </header>
+        </div>
+      </header>
 
-        <div class="admin-content">
-          <!-- VISTA 1: PANEL DE CONTROL -->
-          <section class="view-section" id="admin-view-overview">
-            <div class="admin-kpi-grid" id="admin-kpis">
-              <article class="kpi-card">
-                <div class="kpi-top"><span>Miembros registrados</span><span class="kpi-tag neutral">Total</span></div>
+      <main class="studio-main">
+        <!-- VISTA 1: CONTROL (SWISS BROADCAST GRID) -->
+        <section class="view-section" id="admin-view-overview">
+          <div class="studio-hero-grid">
+            <div class="studio-hero-statement">
+              <div class="studio-hero-bg" aria-hidden="true"></div>
+              <div class="studio-hero-content">
+                <div class="studio-kicker-row">
+                  <span class="studio-index">01 / CENTRO DE MANDO</span>
+                  <span class="studio-role-tag">ADMINISTRADOR</span>
+                </div>
+                <h1>
+                  El control real de la comunidad,<br>
+                  <span>medido en vivo.</span>
+                </h1>
+                <div class="studio-plus-note">
+                  <span class="gold-plus">+</span>
+                  <p>
+                    Cada publicación, reacción o cambio de perfil se refleja al instante en los indicadores y en el mapa interactivo con privacidad garantizada.
+                  </p>
+                </div>
+                <div class="studio-hero-shortcuts">
+                  <button type="button" class="btn btn-gold btn-sm" data-admin-jump="map">Abrir mapa interactivo</button>
+                  <button type="button" class="btn btn-studio-outline btn-sm" data-admin-jump="users">Gestionar miembros</button>
+                  <button type="button" class="btn btn-studio-outline btn-sm" data-admin-jump="activity">Ver pulso en vivo</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="studio-kpi-matrix" id="admin-kpis">
+              <article class="studio-kpi-cell">
+                <div class="studio-kpi-meta">
+                  <span>01 · MIEMBROS</span>
+                  <em id="kpi-active-pct">—</em>
+                </div>
                 <strong id="kpi-total">—</strong>
-                <div class="kpi-bar"><div class="kpi-bar-fill indigo" id="kpi-total-bar" style="width:100%"></div></div>
                 <p id="kpi-total-sub">Cargando comunidad…</p>
               </article>
-              <article class="kpi-card">
-                <div class="kpi-top"><span>Miembros activos</span><span class="kpi-tag success" id="kpi-active-pct">—</span></div>
+
+              <article class="studio-kpi-cell">
+                <div class="studio-kpi-meta">
+                  <span>02 · ACTIVOS</span>
+                  <em class="emerald">VIGENTES</em>
+                </div>
                 <strong id="kpi-active">—</strong>
-                <div class="kpi-bar"><div class="kpi-bar-fill emerald" id="kpi-active-bar" style="width:0%"></div></div>
-                <p id="kpi-active-sub">Participación vigente</p>
+                <p id="kpi-active-sub">Participación reciente</p>
               </article>
-              <article class="kpi-card" id="kpi-activity-card">
-                <div class="kpi-top"><span>Actividad de la comunidad</span><span class="kpi-tag indigo" id="kpi-act-tag">En vivo</span></div>
+
+              <article class="studio-kpi-cell accent-cell" id="kpi-activity-card">
+                <div class="studio-kpi-meta">
+                  <span>03 · ACTIVIDAD EN VIVO</span>
+                  <em id="kpi-act-tag">CANALES</em>
+                </div>
                 <strong id="kpi-activity">—</strong>
-                <div class="kpi-bar"><div class="kpi-bar-fill indigo" id="kpi-act-bar" style="width:0%"></div></div>
                 <p id="kpi-activity-sub">Publicaciones y reacciones</p>
               </article>
-              <article class="kpi-card" id="kpi-sentiment-card">
-                <div class="kpi-top"><span>Ánimo de actividad</span><span class="kpi-tag neutral" id="kpi-sent-badge">—</span></div>
+
+              <article class="studio-kpi-cell" id="kpi-sentiment-card">
+                <div class="studio-kpi-meta">
+                  <span>04 · ÁNIMO DINÁMICO</span>
+                  <em id="kpi-sent-badge">—</em>
+                </div>
                 <strong id="kpi-sentiment">—</strong>
-                <div class="kpi-bar"><div class="kpi-bar-fill emerald" id="kpi-sent-bar" style="width:50%"></div></div>
-                <p id="kpi-sent-sub">Promedio dinámico · escala −1 a +1</p>
+                <p id="kpi-sent-sub">Escala −1 a +1</p>
               </article>
             </div>
+          </div>
 
-            <div class="admin-secondary-strip" id="admin-secondary-strip"></div>
-
-            <div class="admin-chart-grid">
-              <article class="surface-card">
-                <div class="card-head">
-                  <div>
-                    <h2>Estado de los miembros</h2>
-                    <p>Distribución entre activos, en riesgo e inactivos</p>
-                  </div>
-                </div>
-                <div class="chart-box"><canvas id="admin-status-chart"></canvas></div>
-              </article>
-
-              <article class="surface-card" id="admin-channel-card">
-                <div class="card-head">
-                  <div>
-                    <h2>Canales de actividad</h2>
-                    <p>Volumen y tasa de participación por canal en tiempo real</p>
-                  </div>
-                </div>
-                <div class="chart-box" id="admin-channel-wrap"><canvas id="admin-channel-chart"></canvas></div>
-              </article>
-
-              <article class="surface-card">
-                <div class="card-head">
-                  <div>
-                    <h2>Privacidad y consentimiento</h2>
-                    <p>Miembros con ubicación autorizada frente a protegida</p>
-                  </div>
-                </div>
-                <div class="chart-box"><canvas id="admin-consent-chart"></canvas></div>
-              </article>
-
-              <article class="surface-card">
-                <div class="card-head">
-                  <div>
-                    <h2>Ánimo por país</h2>
-                    <p>Promedio calculado solo con ubicaciones autorizadas</p>
-                  </div>
-                </div>
-                <div class="chart-box"><canvas id="admin-country-chart"></canvas></div>
-              </article>
+          <!-- CINTA DORADA ANIMADA CON MÉTRICAS REALES EN VIVO -->
+          <div class="pulse-strip">
+            <span class="pulse-strip-label">Pulso de hoy</span>
+            <div class="pulse-chips" id="admin-marquee-track">
+              <span class="pulse-chip static">Sincronizando datos de la comunidad…</span>
             </div>
-          </section>
+          </div>
 
-          <!-- VISTA 2: MIEMBROS -->
-          <section class="view-section hidden" id="admin-view-users">
-            <article class="surface-card">
-              <div class="card-head">
+          <!-- BANDA SECUNDARIA SWISS HAIRLINE -->
+          <div class="studio-strip-grid" id="admin-secondary-strip"></div>
+
+          <!-- ESCENARIO OSCURO DE GRÁFICAS (BARRAS + DONAS) -->
+          <div class="studio-chart-grid">
+            <article class="studio-panel" id="admin-channel-card">
+              <div class="studio-panel-head">
                 <div>
-                  <h2>Directorio de miembros</h2>
-                  <p>Consulta perfiles, filtra segmentos y gestiona altas o actualizaciones.</p>
-                </div>
-                <div class="action-row">
-                  <button type="button" class="btn btn-outline btn-sm" id="admin-export-csv">Exportar CSV</button>
-                  <button type="button" class="btn btn-primary btn-sm" id="admin-new-member">+ Nuevo miembro</button>
+                  <span class="studio-panel-num">A1</span>
+                  <h2>Canales de actividad</h2>
+                  <p>Participación por canal actualizada al instante</p>
                 </div>
               </div>
-
-              <div class="filter-bar">
-                <div class="filter-search">
-                  <input id="admin-user-search" type="search" placeholder="Buscar por alias o ID de miembro…">
-                </div>
-                <div class="filter-group">
-                  <select id="admin-filter-status">
-                    <option value="">Todos los estados</option>
-                    <option value="activo">Activo</option>
-                    <option value="en_riesgo">En riesgo</option>
-                    <option value="inactivo">Inactivo</option>
-                  </select>
-                  <select id="admin-filter-platform">
-                    <option value="">Todas las plataformas</option>
-                    <option>Discord</option>
-                    <option>Facebook</option>
-                    <option>Instagram</option>
-                    <option>Telegram</option>
-                    <option>TikTok</option>
-                    <option>Twitter/X</option>
-                  </select>
-                  <select id="admin-filter-age">
-                    <option value="">Todas las edades</option>
-                    <option>18-24</option>
-                    <option>25-31</option>
-                    <option>32-38</option>
-                    <option>39+</option>
-                  </select>
-                  <select id="admin-filter-artist">
-                    <option value="">Artista: todos</option>
-                    <option value="1">Sí, es artista</option>
-                    <option value="0">No es artista</option>
-                  </select>
-                  <select id="admin-filter-consent">
-                    <option value="">Ubicación: todas</option>
-                    <option value="si">Autorizada</option>
-                    <option value="no">Protegida</option>
-                  </select>
-                  <select id="admin-filter-country">
-                    <option value="">Todos los países</option>
-                  </select>
-                  <button type="button" class="btn btn-subtle btn-sm" id="admin-clear-filters">Limpiar</button>
-                </div>
-              </div>
-
-              <div class="table-container">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Miembro</th>
-                      <th>Plataforma</th>
-                      <th>Interés</th>
-                      <th>Estado</th>
-                      <th>Ubicación</th>
-                      <th>Última actividad</th>
-                      <th class="col-actions">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody id="admin-users-tbody"></tbody>
-                </table>
-              </div>
-
-              <div class="table-footer">
-                <span id="admin-users-count">—</span>
-                <div class="action-row">
-                  <button type="button" class="btn btn-outline btn-sm" id="admin-prev-page">Anterior</button>
-                  <button type="button" class="btn btn-outline btn-sm" id="admin-next-page">Siguiente</button>
-                </div>
-              </div>
+              <div class="chart-box tall" id="admin-channel-wrap"><canvas id="admin-channel-chart"></canvas></div>
             </article>
-          </section>
 
-          <!-- VISTA 3: ACTIVIDAD EN VIVO (SIN BOTONES DE ALTA/EDICIÓN/BORRADO EN UI) -->
-          <section class="view-section hidden" id="admin-view-activity">
-            <article class="surface-card">
-              <div class="card-head">
+            <article class="studio-panel">
+              <div class="studio-panel-head">
                 <div>
-                  <h2>Actividad de la comunidad</h2>
-                  <p>Consulta histórica y actualización automática en tiempo real de publicaciones y reacciones.</p>
-                </div>
-                <span class="pill pill-success">Sincronizado en vivo</span>
-              </div>
-
-              <div class="filter-bar">
-                <div class="filter-group">
-                  <input id="admin-act-user" placeholder="ID de miembro (ej. U000001)">
-                  <select id="admin-act-channel">
-                    <option value="">Todos los canales</option>
-                    <option>Discord</option>
-                    <option>Instagram</option>
-                    <option>Twitter/X</option>
-                    <option>Telegram</option>
-                    <option>TikTok</option>
-                    <option>Facebook</option>
-                  </select>
-                  <select id="admin-act-type">
-                    <option value="">Todos los tipos</option>
-                    <option value="publicacion">Publicación</option>
-                    <option value="comentario">Comentario</option>
-                    <option value="mensaje">Mensaje</option>
-                    <option value="reaccion">Reacción</option>
-                  </select>
-                  <button type="button" class="btn btn-outline btn-sm" id="admin-act-search">Aplicar filtros</button>
+                  <span class="studio-panel-num">A2</span>
+                  <h2>Ánimo por país</h2>
+                  <p>Calculado exclusivamente con ubicaciones autorizadas</p>
                 </div>
               </div>
-
-              <div id="admin-activity-list" class="activity-stream"></div>
-
-              <div class="table-footer">
-                <span id="admin-activity-meta"></span>
-                <button type="button" class="btn btn-outline btn-sm" id="admin-more-activity" disabled>Cargar más</button>
-              </div>
+              <div class="chart-box tall"><canvas id="admin-country-chart"></canvas></div>
             </article>
-          </section>
 
-          <!-- VISTA 4: MAPA DE CALOR -->
-          <section class="view-section hidden" id="admin-view-map">
-            <div class="map-layout admin-map-layout">
-              <article class="surface-card">
-                <div class="card-head">
-                  <div>
-                    <h2>Mapa de calor comunitario</h2>
-                    <p>Densidad geográfica calculada exclusivamente con miembros que autorizaron su ubicación.</p>
-                  </div>
-                  <div class="map-mode-toggle" id="admin-map-mode">
-                    <button type="button" data-mode="heat">Calor</button>
-                    <button type="button" data-mode="both" class="active">Combinado</button>
-                    <button type="button" data-mode="markers">Marcadores</button>
-                  </div>
+            <article class="studio-panel">
+              <div class="studio-panel-head">
+                <div>
+                  <span class="studio-panel-num">B1</span>
+                  <h2>Estado de los miembros</h2>
+                  <p>Activos, en riesgo e inactivos</p>
                 </div>
-                <div id="admin-privacy-banner" class="privacy-banner">Verificando protección de ubicaciones…</div>
-                <div id="admin-map-canvas" class="map-canvas"></div>
-                <div class="map-legend">
+              </div>
+              <div class="chart-box"><canvas id="admin-status-chart"></canvas></div>
+            </article>
+
+            <article class="studio-panel">
+              <div class="studio-panel-head">
+                <div>
+                  <span class="studio-panel-num">B2</span>
+                  <h2>Privacidad y consentimiento</h2>
+                  <p>Ubicación autorizada frente a protegida</p>
+                </div>
+              </div>
+              <div class="chart-box"><canvas id="admin-consent-chart"></canvas></div>
+            </article>
+          </div>
+        </section>
+
+        <!-- VISTA 2: DIRECTORIO DE MIEMBROS -->
+        <section class="view-section hidden" id="admin-view-users">
+          <div class="studio-section-banner">
+            <div>
+              <span class="studio-index">02 / DIRECTORIO</span>
+              <h1>Miembros de la comunidad</h1>
+              <p>Filtra segmentos, consulta historiales individuales y administra altas o actualizaciones.</p>
+            </div>
+            <div class="action-row">
+              <button type="button" class="btn btn-studio-outline btn-sm" id="admin-export-csv">Exportar CSV</button>
+              <button type="button" class="btn btn-gold btn-sm" id="admin-new-member">+ Nuevo miembro</button>
+            </div>
+          </div>
+
+          <div class="studio-paper-sheet">
+            <div class="filter-bar">
+              <div class="filter-search">
+                <input id="admin-user-search" type="search" placeholder="Buscar por alias o ID de miembro…">
+              </div>
+              <div class="filter-group">
+                <select id="admin-filter-status">
+                  <option value="">Todos los estados</option>
+                  <option value="activo">Activo</option>
+                  <option value="en_riesgo">En riesgo</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+                <select id="admin-filter-platform">
+                  <option value="">Todas las plataformas</option>
+                  <option>Discord</option>
+                  <option>Facebook</option>
+                  <option>Instagram</option>
+                  <option>Telegram</option>
+                  <option>TikTok</option>
+                  <option>Twitter/X</option>
+                </select>
+                <select id="admin-filter-age">
+                  <option value="">Todas las edades</option>
+                  <option>18-24</option>
+                  <option>25-31</option>
+                  <option>32-38</option>
+                  <option>39+</option>
+                </select>
+                <select id="admin-filter-artist">
+                  <option value="">Artista: todos</option>
+                  <option value="1">Sí, es artista</option>
+                  <option value="0">No es artista</option>
+                </select>
+                <select id="admin-filter-consent">
+                  <option value="">Ubicación: todas</option>
+                  <option value="si">Autorizada</option>
+                  <option value="no">Protegida</option>
+                </select>
+                <select id="admin-filter-country">
+                  <option value="">Todos los países</option>
+                </select>
+                <button type="button" class="btn btn-subtle btn-sm" id="admin-clear-filters">Limpiar</button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Miembro</th>
+                    <th>Plataforma</th>
+                    <th>Interés</th>
+                    <th>Estado</th>
+                    <th>Ubicación</th>
+                    <th>Última actividad</th>
+                    <th class="col-actions">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-tbody"></tbody>
+              </table>
+            </div>
+
+            <div class="table-footer">
+              <span id="admin-users-count">—</span>
+              <div class="action-row">
+                <button type="button" class="btn btn-outline btn-sm" id="admin-prev-page">Anterior</button>
+                <button type="button" class="btn btn-outline btn-sm" id="admin-next-page">Siguiente</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 3: ACTIVIDAD EN VIVO (SIN BOTONES DE ALTA/EDICIÓN/BORRADO EN UI) -->
+        <section class="view-section hidden" id="admin-view-activity">
+          <div class="studio-section-banner">
+            <div>
+              <span class="studio-index">03 / FLUJO EN TIEMPO REAL</span>
+              <h1>Actividad de la comunidad</h1>
+              <p>Publicaciones, comentarios y reacciones sincronizados al instante sin recargar la pantalla.</p>
+            </div>
+            <span class="pill pill-success">Actualización automática en vivo</span>
+          </div>
+
+          <div class="studio-paper-sheet">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <input id="admin-act-user" placeholder="ID de miembro (ej. U000001)">
+                <select id="admin-act-channel">
+                  <option value="">Todos los canales</option>
+                  <option>Discord</option>
+                  <option>Instagram</option>
+                  <option>Twitter/X</option>
+                  <option>Telegram</option>
+                  <option>TikTok</option>
+                  <option>Facebook</option>
+                </select>
+                <select id="admin-act-type">
+                  <option value="">Todos los tipos</option>
+                  <option value="publicacion">Publicación</option>
+                  <option value="comentario">Comentario</option>
+                  <option value="mensaje">Mensaje</option>
+                  <option value="reaccion">Reacción</option>
+                </select>
+                <button type="button" class="btn btn-primary btn-sm" id="admin-act-search">Aplicar filtros</button>
+              </div>
+            </div>
+
+            <div id="admin-activity-list" class="activity-stream"></div>
+
+            <div class="table-footer">
+              <span id="admin-activity-meta"></span>
+              <button type="button" class="btn btn-outline btn-sm" id="admin-more-activity" disabled>Cargar más</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA 4: MAPA REAL INTERACTIVO (SATÉLITE / CALLES / NOCTURNO + HEATMAP + FLYTO) -->
+        <section class="view-section hidden" id="admin-view-map">
+          <div class="studio-section-banner">
+            <div>
+              <span class="studio-index">04 / ATLAS INTERACTIVO</span>
+              <h1>Mapa real y densidad de calor</h1>
+              <p>Arrastra, haz zoom con la rueda, cambia a vista satelital o haz clic en cualquier región para volar hacia ella.</p>
+            </div>
+            <div class="action-row">
+              <div class="map-mode-toggle dark-toggle" id="admin-basemap-mode">
+                <button type="button" data-basemap="light" class="active">Claro</button>
+                <button type="button" data-basemap="satellite">Satélite</button>
+                <button type="button" data-basemap="streets">Calles</button>
+                <button type="button" data-basemap="topo">Relieve</button>
+              </div>
+              <div class="map-mode-toggle dark-toggle" id="admin-map-mode">
+                <button type="button" data-mode="heat">Calor</button>
+                <button type="button" data-mode="both" class="active">Combinado</button>
+                <button type="button" data-mode="markers">Marcadores</button>
+              </div>
+              <button type="button" class="btn btn-gold btn-sm" id="admin-map-reset">Vista global</button>
+            </div>
+          </div>
+
+          <div class="studio-map-workspace">
+            <div class="studio-map-stage">
+              <div id="admin-privacy-banner" class="studio-privacy-strip">Verificando protección de ubicaciones…</div>
+              <div id="admin-map-canvas" class="map-canvas studio-map-canvas"></div>
+              <div class="studio-map-footer">
+                <div class="map-legend dark-legend">
                   <span><i class="dot emerald"></i> Activo</span>
                   <span><i class="dot amber"></i> En riesgo</span>
                   <span><i class="dot rose"></i> Inactivo</span>
                   <span class="heat-legend-bar"><i class="heat-swatch"></i> Densidad de calor</span>
                 </div>
-              </article>
-
-              <aside class="surface-card map-side-panel">
-                <div class="card-head">
-                  <div>
-                    <h2>Resumen regional</h2>
-                    <p>Países con mayor presencia autorizada</p>
-                  </div>
-                </div>
-                <div id="admin-map-summary" class="geo-rank-list">
-                  <div class="empty-state compact">Cargando resumen…</div>
-                </div>
-              </aside>
+                <span class="map-tip">Tip: arrastra para recorrer el planeta · doble clic o scroll para acercar</span>
+              </div>
             </div>
-          </section>
 
-          <!-- VISTA 5: REVISIÓN E HISTORIAL -->
-          <section class="view-section hidden" id="admin-view-review">
-            <div class="review-split-grid">
-              <article class="surface-card">
-                <div class="card-head">
-                  <div>
-                    <h2>Registros por revisar</h2>
-                    <p>Actividad pendiente de vincular con un miembro vigente.</p>
-                  </div>
-                  <button type="button" class="btn btn-subtle btn-sm" id="admin-reload-review">Actualizar</button>
-                </div>
-                <div id="admin-pending-list" class="activity-stream"></div>
-                <div class="table-footer">
-                  <span id="admin-pending-meta"></span>
-                  <button type="button" class="btn btn-outline btn-sm" id="admin-more-pending" disabled>Cargar más</button>
-                </div>
-              </article>
+            <aside class="studio-map-rail">
+              <div class="rail-head">
+                <h3>Volar a región</h3>
+                <p>Selecciona un destino autorizado</p>
+              </div>
+              <div id="admin-map-summary" class="studio-geo-list">
+                <div class="empty-state compact">Cargando ubicaciones…</div>
+              </div>
+            </aside>
+          </div>
+        </section>
 
-              <article class="surface-card">
-                <div class="card-head">
-                  <div>
-                    <h2>Historial de importaciones</h2>
-                    <p>Seguimiento de calidad y actualización de la comunidad.</p>
-                  </div>
-                </div>
-                <div class="table-container">
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Sección</th>
-                        <th>Recibidos</th>
-                        <th>Integrados</th>
-                        <th>Pendientes</th>
-                      </tr>
-                    </thead>
-                    <tbody id="admin-imports-tbody"></tbody>
-                  </table>
-                </div>
-              </article>
+        <!-- VISTA 5: REVISIÓN E HISTORIAL -->
+        <section class="view-section hidden" id="admin-view-review">
+          <div class="studio-section-banner">
+            <div>
+              <span class="studio-index">05 / CONTROL DE CALIDAD</span>
+              <h1>Revisión e historial de importaciones</h1>
+              <p>Asocia actividad pendiente con miembros vigentes y consulta las actualizaciones integradas.</p>
             </div>
-          </section>
+            <button type="button" class="btn btn-gold btn-sm" id="admin-reload-review">Actualizar</button>
+          </div>
 
-          <!-- VISTA 6: CUENTAS DE ACCESO -->
-          <section class="view-section hidden" id="admin-view-accounts">
-            <article class="surface-card">
+          <div class="review-split-grid">
+            <article class="studio-paper-sheet">
               <div class="card-head">
                 <div>
-                  <h2>Cuentas de acceso</h2>
-                  <p>Administra perfiles de administradores y analistas del equipo.</p>
+                  <h2>Registros por revisar</h2>
+                  <p>Actividad pendiente de vincular con un perfil vigente</p>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" id="admin-new-account">+ Nueva cuenta</button>
+              </div>
+              <div id="admin-pending-list" class="activity-stream"></div>
+              <div class="table-footer">
+                <span id="admin-pending-meta"></span>
+                <button type="button" class="btn btn-outline btn-sm" id="admin-more-pending" disabled>Cargar más</button>
+              </div>
+            </article>
+
+            <article class="studio-paper-sheet">
+              <div class="card-head">
+                <div>
+                  <h2>Historial de importaciones</h2>
+                  <p>Seguimiento de calidad y actualización de la comunidad</p>
+                </div>
               </div>
               <div class="table-container">
                 <table class="data-table">
                   <thead>
                     <tr>
-                      <th>Cuenta</th>
-                      <th>Correo</th>
-                      <th>Perfil</th>
-                      <th>Estado</th>
-                      <th class="col-actions">Acciones</th>
+                      <th>Fecha</th>
+                      <th>Sección</th>
+                      <th>Recibidos</th>
+                      <th>Integrados</th>
+                      <th>Pendientes</th>
                     </tr>
                   </thead>
-                  <tbody id="admin-accounts-tbody"></tbody>
+                  <tbody id="admin-imports-tbody"></tbody>
                 </table>
               </div>
             </article>
-          </section>
-        </div>
-      </div>
+          </div>
+        </section>
+
+        <!-- VISTA 6: CUENTAS DE ACCESO -->
+        <section class="view-section hidden" id="admin-view-accounts">
+          <div class="studio-section-banner">
+            <div>
+              <span class="studio-index">06 / EQUIPO Y PERMISOS</span>
+              <h1>Cuentas de acceso</h1>
+              <p>Administra perfiles de administradores y analistas del equipo.</p>
+            </div>
+            <button type="button" class="btn btn-gold btn-sm" id="admin-new-account">+ Nueva cuenta</button>
+          </div>
+
+          <div class="studio-paper-sheet">
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Cuenta</th>
+                    <th>Correo</th>
+                    <th>Perfil</th>
+                    <th>Estado</th>
+                    <th class="col-actions">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-accounts-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   `;
 
@@ -471,9 +510,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
     root.querySelectorAll('.view-section').forEach((sec) => {
       sec.classList.toggle('hidden', sec.id !== `admin-view-${view}`);
     });
-    const meta = SECTION_META[view] || SECTION_META.overview;
-    $('#admin-crumb').textContent = meta.crumb.toUpperCase();
-    $('#admin-page-title').textContent = meta.title;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (view === 'overview') loadOverview();
     if (view === 'users') loadUsers();
@@ -494,6 +531,10 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
     if (!btn) return;
     switchView(btn.dataset.view);
   });
+  $('#studio-brand-home').addEventListener('click', () => switchView('overview'));
+  root.querySelectorAll('[data-admin-jump]').forEach((btn) => {
+    btn.addEventListener('click', () => switchView(btn.dataset.adminJump));
+  });
 
   $('#admin-map-mode').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-mode]');
@@ -503,7 +544,15 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
     setMapLayerMode(mapLayerMode);
   });
 
-  $('#admin-side-switch').addEventListener('click', onSwitchAccount);
+  $('#admin-basemap-mode').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-basemap]');
+    if (!btn) return;
+    mapBasemap = btn.dataset.basemap;
+    root.querySelectorAll('#admin-basemap-mode button').forEach((b) => b.classList.toggle('active', b === btn));
+    setMapBasemap(mapBasemap);
+  });
+
+  $('#admin-map-reset').addEventListener('click', () => resetMapBounds());
   $('#admin-top-switch').addEventListener('click', onSwitchAccount);
   $('#admin-change-pwd').addEventListener('click', () => openChangePasswordModal({ api, toast }));
 
@@ -515,6 +564,34 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
         '<option value="">Todos los países</option>' +
         locations.map((p) => `<option value="${p.pais_id}">${escapeHtml(p.nombre)}</option>`).join('');
     } catch {}
+  }
+
+  function updateMarquee(d) {
+    const track = $('#admin-marquee-track');
+    if (!track) return;
+    const sent = formatSentiment(
+      d.actividad_disponible && d.sentimiento_interacciones_promedio !== null
+        ? d.sentimiento_interacciones_promedio
+        : d.sentimiento_promedio
+    );
+    const topChannel = d.canales?.[0];
+    const items = [
+      `${formatNumber(d.total_usuarios)} MIEMBROS REGISTRADOS`,
+      `${formatNumber(d.activos)} ACTIVOS HOY`,
+      d.actividad_disponible && d.total_interacciones_validas !== null
+        ? `${formatNumber(d.total_interacciones_validas)} ACTIVIDADES EN VIVO`
+        : 'SINCRONIZACIÓN EN VIVO ACTIVA',
+      `ÁNIMO PROMEDIO ${sent.score} (${sent.label.toUpperCase()})`,
+      topChannel ? `CANAL LÍDER: ${topChannel.canal.toUpperCase()} ${topChannel.tasa_participacion}%` : 'CANALES ACTIVOS',
+      `${formatNumber(d.consentimiento_si)} UBICACIONES EN MAPA · ${formatNumber(d.consentimiento_no)} PROTEGIDOS`,
+    ];
+    const views = ['users', 'users', 'activity', 'overview', 'activity', 'map'];
+    track.innerHTML = items
+      .map(
+        (t, i) =>
+          `<button type="button" class="pulse-chip" data-admin-jump="${views[i] || 'overview'}" title="Ir a esta sección">${escapeHtml(t)}<em>→</em></button>`
+      )
+      .join('');
   }
 
   function applySummaryToOverview(d, highlightLive = false) {
@@ -534,37 +611,31 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
     const sent = formatSentiment(activeSentimentRaw);
 
     $('#kpi-total').textContent = formatNumber(total);
-    $('#kpi-total-sub').textContent = `${formatNumber(artists)} artistas · ${formatPercent(consentSi, total)} con ubicación autorizada`;
+    $('#kpi-active-pct').textContent = `${formatPercent(active, total)} ACTIVOS`;
+    $('#kpi-total-sub').textContent = `${formatNumber(artists)} creadores · ${formatPercent(consentSi, total)} con ubicación autorizada`;
 
-    const activePct = total ? Math.round((active / total) * 100) : 0;
     $('#kpi-active').textContent = formatNumber(active);
-    $('#kpi-active-pct').textContent = `${activePct}%`;
-    $('#kpi-active-bar').style.width = `${activePct}%`;
     $('#kpi-active-sub').textContent = `${formatNumber(atRisk)} en riesgo · ${formatNumber(inactive)} inactivos`;
 
     if (d.actividad_disponible && d.total_interacciones_validas !== null) {
       $('#kpi-activity').textContent = formatNumber(d.total_interacciones_validas);
-      $('#kpi-act-tag').textContent = `${(d.canales || []).length} canales`;
-      $('#kpi-act-bar').style.width = '100%';
+      $('#kpi-act-tag').textContent = `${(d.canales || []).length} CANALES`;
       const avgReact = d.promedio_reacciones !== null ? Number(d.promedio_reacciones).toFixed(2) : '0.00';
       $('#kpi-activity-sub').textContent = `Promedio de ${avgReact} reacciones · ${formatNumber(d.total_en_cuarentena ?? 0)} por revisar`;
     } else {
-      $('#kpi-activity').textContent = 'No disponible';
-      $('#kpi-act-tag').textContent = 'Sin conexión';
-      $('#kpi-act-bar').style.width = '0%';
-      $('#kpi-activity-sub').textContent = 'Verifica la conexión del servicio de actividad';
+      $('#kpi-activity').textContent = 'En pausa';
+      $('#kpi-act-tag').textContent = 'SIN CONEXIÓN';
+      $('#kpi-activity-sub').textContent = 'Servicio de actividad temporalmente sin respuesta';
     }
 
-    const sentNum = Number(activeSentimentRaw || 0);
-    const sentPct = Math.max(4, Math.min(100, Math.round(((sentNum + 1) / 2) * 100)));
     $('#kpi-sentiment').textContent = sent.score;
-    $('#kpi-sent-badge').textContent = sent.label;
-    $('#kpi-sent-badge').className = `kpi-tag ${sent.tone}`;
-    $('#kpi-sent-bar').style.width = `${sentPct}%`;
+    $('#kpi-sent-badge').textContent = sent.label.toUpperCase();
     $('#kpi-sent-sub').textContent =
       d.actividad_disponible && d.tasa_positividad_actividad !== null
         ? `${d.tasa_positividad_actividad}% de actividad con tono positivo`
-        : 'Promedio de perfiles · escala −1 a +1';
+        : 'Promedio general de comunidad';
+
+    updateMarquee(d);
 
     const topChannel = d.canales?.[0];
     const topInterest = d.top_intereses?.[0];
@@ -573,25 +644,25 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       d.actividad_disponible && d.promedio_reacciones !== null ? Number(d.promedio_reacciones).toFixed(2) : '—';
 
     $('#admin-secondary-strip').innerHTML = `
-      <div class="insight-pill-card">
-        <span>Canal con mayor participación</span>
+      <div class="studio-strip-cell">
+        <span>CANAL CON MAYOR PARTICIPACIÓN</span>
         <strong>${escapeHtml(topChannel?.canal || d.plataformas?.[0]?.nombre || '—')}</strong>
-        <small>${topChannel ? `${topChannel.tasa_participacion}% de la actividad (${formatNumber(topChannel.total)})` : `${formatNumber(d.plataformas?.[0]?.total)} miembros`}</small>
+        <small>${topChannel ? `${topChannel.tasa_participacion}% del total (${formatNumber(topChannel.total)})` : `${formatNumber(d.plataformas?.[0]?.total)} miembros`}</small>
       </div>
-      <div class="insight-pill-card">
-        <span>Promedio de reacciones</span>
+      <div class="studio-strip-cell">
+        <span>PROMEDIO DE REACCIONES</span>
         <strong>${escapeHtml(avgReactText)}</strong>
-        <small>${d.total_reacciones !== null ? `${formatNumber(d.total_reacciones)} reacciones acumuladas` : 'Por publicación y comentario'}</small>
+        <small>${d.total_reacciones !== null ? `${formatNumber(d.total_reacciones)} reacciones acumuladas` : 'Por publicación'}</small>
       </div>
-      <div class="insight-pill-card">
-        <span>Interés principal</span>
+      <div class="studio-strip-cell">
+        <span>INTERÉS PRINCIPAL</span>
         <strong>${escapeHtml(topInterest?.nombre || '—')}</strong>
         <small>${formatNumber(topInterest?.total)} miembros · líder ${escapeHtml(topCountry?.pais || '—')}</small>
       </div>
-      <div class="insight-pill-card">
-        <span>Privacidad protegida</span>
+      <div class="studio-strip-cell">
+        <span>PRIVACIDAD PROTEGIDA</span>
         <strong>${formatNumber(consentNo)}</strong>
-        <small>Miembros excluidos de los mapas</small>
+        <small>Excluidos automáticamente de los mapas</small>
       </div>
     `;
 
@@ -606,7 +677,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       buildDoughnutConfig({
         labels: ['Activos', 'En riesgo', 'Inactivos'],
         data: [active, atRisk, inactive],
-        colors: ['#10b981', '#f59e0b', '#f43f5e'],
+        colors: ['#16a37a', '#f2a900', '#e5566d'],
       })
     );
 
@@ -618,7 +689,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
         buildBarConfig({
           labels: d.canales.map((x) => `${x.canal} (${x.tasa_participacion}%)`),
           data: d.canales.map((x) => x.total),
-          color: '#4f46e5',
+          color: '#ee6c4d',
           valueSuffix: ' registros',
         })
       );
@@ -626,7 +697,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       channelWrap.innerHTML = `<div class="empty-state">${
         d.actividad_disponible
           ? 'Aún no hay actividad registrada por canal.'
-          : 'La actividad por canales no está disponible temporalmente. El resto de los indicadores sigue operando con normalidad.'
+          : 'La actividad por canales no está disponible temporalmente.'
       }</div>`;
     }
 
@@ -635,7 +706,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       buildDoughnutConfig({
         labels: ['Ubicación autorizada', 'Ubicación protegida'],
         data: [consentSi, consentNo],
-        colors: ['#059669', '#cbd5e1'],
+        colors: ['#0f5e6b', '#d9d2c5'],
       })
     );
 
@@ -645,7 +716,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       buildBarConfig({
         labels: countries.map((x) => x.pais),
         data: countries.map((x) => Number(Number(x.sentimiento_promedio || 0).toFixed(2))),
-        color: '#6366f1',
+        color: '#0f5e6b',
         yFormat: (v) => `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(2)}`,
       })
     );
@@ -841,9 +912,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
 
   async function loadActivity(reset = false) {
     const list = $('#admin-activity-list');
-    if (reset) {
-      list.innerHTML = '<div class="loading-row">Cargando actividad de la comunidad…</div>';
-    }
+    if (reset) list.innerHTML = '<div class="loading-row">Cargando actividad de la comunidad…</div>';
     try {
       const q = new URLSearchParams({ limit: '20' });
       const uid = $('#admin-act-user').value.trim();
@@ -860,18 +929,11 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       $('#admin-more-activity').disabled = !activityCursor;
 
       const html = (data.items || []).map((item) => renderActivityCard(item, false)).join('');
-
-      if (html) {
-        list.insertAdjacentHTML('beforeend', html);
-      } else if (reset) {
-        list.innerHTML = '<div class="empty-state">No se encontró actividad con estos filtros.</div>';
-      }
-      const totalRendered = list.querySelectorAll('.activity-card').length;
-      $('#admin-activity-meta').textContent = `${formatNumber(totalRendered)} actividades mostradas`;
+      if (html) list.insertAdjacentHTML('beforeend', html);
+      else if (reset) list.innerHTML = '<div class="empty-state">No se encontró actividad con estos filtros.</div>';
+      $('#admin-activity-meta').textContent = `${formatNumber(list.querySelectorAll('.activity-card').length)} actividades mostradas`;
     } catch (err) {
-      if (reset) {
-        list.innerHTML = `<div class="inline-notice warning">${escapeHtml(err.message)}</div>`;
-      }
+      if (reset) list.innerHTML = `<div class="inline-notice warning">${escapeHtml(err.message)}</div>`;
       $('#admin-more-activity').disabled = true;
       toast(err.message, true);
     }
@@ -885,44 +947,72 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
     if (activityCursor) loadActivity(false);
   });
 
+  function buildCityCentroids(points) {
+    const map = new Map();
+    for (const p of points) {
+      if (p.latitud == null || p.longitud == null) continue;
+      const key = `${p.ciudad}|${p.pais}`;
+      if (!map.has(key)) map.set(key, { ciudad: p.ciudad, pais: p.pais, latSum: 0, lngSum: 0, count: 0, sentSum: 0 });
+      const entry = map.get(key);
+      entry.latSum += Number(p.latitud);
+      entry.lngSum += Number(p.longitud);
+      entry.sentSum += Number(p.sentimiento_promedio || 0);
+      entry.count += 1;
+    }
+    return [...map.values()]
+      .map((c) => ({
+        ciudad: c.ciudad,
+        pais: c.pais,
+        lat: c.latSum / c.count,
+        lng: c.lngSum / c.count,
+        usuarios: c.count,
+        sentimiento: c.sentSum / c.count,
+      }))
+      .sort((a, b) => b.usuarios - a.usuarios);
+  }
+
   async function loadMap() {
     const banner = $('#admin-privacy-banner');
     const summaryEl = $('#admin-map-summary');
     banner.textContent = 'Consultando ubicaciones autorizadas…';
     try {
-      const [points, protectedRes, summary] = await Promise.all([
+      const [points, protectedRes] = await Promise.all([
         api('/api/analytics/mapa'),
         api('/api/usuarios?consentimiento_datos=no&limit=1'),
-        summaryCache ? Promise.resolve(summaryCache) : api('/api/analytics/resumen').catch(() => null),
       ]);
-      if (summary) summaryCache = summary;
+      mapPointsCache = points || [];
 
-      banner.innerHTML = `<strong>${formatNumber(protectedRes.total)} miembros protegidos</strong> están excluidos automáticamente de este mapa de calor. Mostrando <b>${formatNumber(points.length)}</b> ubicaciones con autorización vigente.`;
-      renderCommunityMap('admin-map-canvas', points, { theme: 'positron', mode: mapLayerMode });
+      banner.innerHTML = `<strong>${formatNumber(protectedRes.total)} miembros protegidos</strong> excluidos por privacidad · <b>${formatNumber(mapPointsCache.length)}</b> ubicaciones reales autorizadas en el mapa.`;
+      renderCommunityMap('admin-map-canvas', mapPointsCache, { theme: mapBasemap, mode: mapLayerMode });
 
-      const countries = summary?.por_pais || [];
-      summaryEl.innerHTML = countries.length
-        ? countries
-            .slice(0, 8)
+      const cities = buildCityCentroids(mapPointsCache).slice(0, 12);
+      summaryEl.innerHTML = cities.length
+        ? cities
             .map((c) => {
-              const s = formatSentiment(c.sentimiento_promedio);
+              const s = formatSentiment(c.sentimiento);
               return `
-                <div class="geo-rank-item">
+                <button type="button" class="geo-fly-item" data-lat="${c.lat}" data-lng="${c.lng}">
                   <div>
-                    <strong>${escapeHtml(c.pais)}</strong>
-                    <small>${formatNumber(c.usuarios)} miembros autorizados</small>
+                    <strong>${escapeHtml(c.ciudad)}</strong>
+                    <small>${escapeHtml(c.pais)} · ${formatNumber(c.usuarios)} miembros</small>
                   </div>
                   <span class="pill pill-${s.tone}">${escapeHtml(s.score)}</span>
-                </div>
+                </button>
               `;
             })
             .join('')
-        : '<div class="empty-state compact">Sin datos regionales disponibles.</div>';
+        : '<div class="empty-state compact">Sin ubicaciones autorizadas.</div>';
     } catch (err) {
       banner.textContent = 'No fue posible cargar el mapa en este momento.';
       toast(err.message, true);
     }
   }
+
+  $('#admin-map-summary').addEventListener('click', (e) => {
+    const btn = e.target.closest('.geo-fly-item');
+    if (!btn) return;
+    flyToLocation(btn.dataset.lat, btn.dataset.lng, 10);
+  });
 
   async function loadReviewSection(reset = true) {
     const pendingList = $('#admin-pending-list');
@@ -966,15 +1056,12 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
           `
         )
         .join('');
-      if (html) {
-        pendingList.insertAdjacentHTML('beforeend', html);
-      } else if (reset) {
-        pendingList.innerHTML = '<div class="empty-state compact">No hay registros pendientes por revisar.</div>';
-      }
+      if (html) pendingList.insertAdjacentHTML('beforeend', html);
+      else if (reset) pendingList.innerHTML = '<div class="empty-state compact">No hay registros pendientes por revisar.</div>';
       $('#admin-pending-meta').textContent = `${pendingList.querySelectorAll('.activity-card').length} registros mostrados`;
     } else {
       if (reset) {
-        pendingList.innerHTML = `<div class="inline-notice warning">${escapeHtml(pendingRes.reason?.message || 'No fue posible consultar los registros pendientes en este momento.')}</div>`;
+        pendingList.innerHTML = `<div class="inline-notice warning">${escapeHtml(pendingRes.reason?.message || 'No fue posible consultar los registros pendientes.')}</div>`;
       }
       $('#admin-more-pending').disabled = true;
     }
@@ -998,7 +1085,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
               .join('')
           : '<tr><td colspan="5"><div class="empty-state compact">Aún no hay importaciones registradas.</div></td></tr>';
       } else {
-        importsBody.innerHTML = `<tr><td colspan="5"><div class="inline-notice warning">${escapeHtml(importsRes.reason?.message || 'No se pudo cargar el historial de importaciones.')}</div></td></tr>`;
+        importsBody.innerHTML = `<tr><td colspan="5"><div class="inline-notice warning">${escapeHtml(importsRes.reason?.message || 'No se pudo cargar el historial.')}</div></td></tr>`;
       }
     }
   }
@@ -1103,9 +1190,9 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
   function onRealtimeStatus(status) {
     const badge = $('#admin-live-status');
     if (!badge) return;
-    badge.className = `live-pill ${status}`;
+    badge.className = `live-pill dark-live ${status}`;
     const label =
-      status === 'live' ? 'En vivo' : status === 'reconnecting' ? 'Reconectando…' : status === 'connecting' ? 'Conectando…' : 'Sin conexión';
+      status === 'live' ? 'En vivo' : status === 'reconnecting' ? 'Reconectando' : status === 'connecting' ? 'Conectando' : 'Sin señal';
     badge.innerHTML = `<i class="live-dot"></i><span>${label}</span>`;
   }
 
@@ -1131,9 +1218,7 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       toast(`Actividad actualizada en vivo · ${payload.item.canal || 'Comunidad'}`);
       if (activeView === 'activity' && list) {
         const card = list.querySelector(`[data-activity-id="${CSS.escape(payload.item.id_interaccion)}"]`);
-        if (card) {
-          card.outerHTML = renderActivityCard(payload.item, true);
-        }
+        if (card) card.outerHTML = renderActivityCard(payload.item, true);
       }
     } else if (eventName === 'interaccion:eliminada' && payload?.id_interaccion) {
       toast(`Actividad eliminada en vivo · ${payload.id_interaccion}`);
@@ -1144,6 +1229,11 @@ export function mountAdminView(root, { api, profile, onSwitchAccount, toast }) {
       }
     }
   }
+
+  $('#admin-marquee-track').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-admin-jump]');
+    if (chip) switchView(chip.dataset.adminJump);
+  });
 
   loadCatalogs();
   loadOverview();

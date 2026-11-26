@@ -14,7 +14,14 @@ import {
   formatSentiment,
   statusBadge,
 } from './format.js';
-import { destroyMap, renderCommunityMap, setMapLayerMode } from './map.js';
+import {
+  destroyMap,
+  flyToLocation,
+  renderCommunityMap,
+  resetMapBounds,
+  setMapBasemap,
+  setMapLayerMode,
+} from './map.js';
 import { openChangePasswordModal, openMemberDetailModal, openPendingDetailModal } from './modals.js';
 
 export function mountAnalystView(root, { api, profile, onSwitchAccount, toast }) {
@@ -27,114 +34,121 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
   let feedCursor = null;
   let pendingCursor = null;
   let mapLayerMode = 'both';
+  let mapBasemap = 'streets';
 
   root.innerHTML = `
-    <div class="analyst-shell" data-experience="analyst">
-      <!-- BARRA DE NAVEGACIÓN SUPERIOR HORIZONTAL (ESTILO PORTAL EDITORIAL) -->
-      <header class="portal-navbar">
-        <div class="portal-navbar-inner">
-          <a href="#inicio" class="portal-brand" id="portal-brand-home">
-            <div class="brand-emblem editorial"><span>C</span><em>360</em></div>
-            <div>
-              <strong>Community 360</strong>
-              <small>Portal de Comunidad</small>
-            </div>
-          </a>
-
-          <nav class="portal-nav" id="analyst-nav" aria-label="Secciones del portal">
+    <div class="magazine-shell" data-experience="analyst">
+      <!-- CÁPSULA FLOTANTE DE VIDRIO CON MEDALLÓN CENTRAL (INSPIRADA EN RADHIYOGA) -->
+      <header class="glass-nav-wrap">
+        <nav class="glass-pill-nav" id="analyst-nav" aria-label="Navegación del portal">
+          <div class="glass-nav-side left">
             <button type="button" data-section="home" class="active">Inicio</button>
             <button type="button" data-section="trends">Tendencias</button>
-            <button type="button" data-section="map">Mapa de calor</button>
+            <button type="button" data-section="map">Atlas</button>
+          </div>
+
+          <button type="button" class="glass-medallion" id="portal-brand-home" title="Volver a Inicio">
+            <span>C</span><em>360</em>
+          </button>
+
+          <div class="glass-nav-side right">
             <button type="button" data-section="members">Miembros</button>
             <button type="button" data-section="conversations">Conversaciones</button>
-          </nav>
-
-          <div class="portal-user-actions">
-            <span class="live-pill connecting" id="analyst-live-status" title="Actualización automática en vivo">
-              <i class="live-dot"></i><span>Conectando…</span>
-            </span>
-            <div class="portal-profile-pill">
-              ${avatarHtml(profile.username, 'xs')}
-              <div>
-                <strong>${escapeHtml(profile.username)}</strong>
-                <small>${escapeHtml(formatRole(profile.rol))}</small>
-              </div>
-            </div>
-            <button type="button" class="btn btn-portal-ghost btn-sm" id="analyst-pwd-btn" title="Cambiar contraseña">Clave</button>
-            <button type="button" class="btn btn-portal-outline btn-sm" id="analyst-switch-btn">Cambiar de cuenta</button>
+            <button type="button" class="glass-switch-pill" id="analyst-switch-btn">Cambiar cuenta</button>
           </div>
-        </div>
+        </nav>
       </header>
 
-      <main class="portal-main">
-        <!-- SECCIÓN 1: HERO EDITORIAL & PULSO VIVO -->
-        <section class="portal-section" id="analyst-sec-home">
-          <div class="portal-hero">
-            <div class="portal-hero-copy">
-              <span class="editorial-kicker">Pulso de la comunidad · Vista de exploración en vivo</span>
-              <h1>Descubre cómo vibra y crece nuestra comunidad hoy.</h1>
+      <!-- RIEL FLOTANTE VERTICAL LATERAL (INSPIRADO EN EDSPORTLINE) -->
+      <aside class="floating-edge-rail" aria-label="Acciones rápidas">
+        <div class="rail-live-indicator connecting" id="analyst-live-status" title="Conexión en vivo">
+          <i class="live-dot"></i>
+        </div>
+        <button type="button" class="rail-icon-btn" id="analyst-pwd-btn" title="Cambiar contraseña" aria-label="Cambiar contraseña">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </button>
+        <button type="button" class="rail-icon-btn" id="analyst-rail-switch" title="Cambiar de cuenta (${escapeHtml(profile.username)})" aria-label="Cambiar de cuenta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+        </button>
+      </aside>
+
+      <!-- SECCIÓN 1: HERO INMERSIVO EDITORIAL + PULSO EN VIVO -->
+      <section class="mag-section" id="analyst-sec-home">
+        <div class="mag-hero">
+          <div class="mag-hero-photo" aria-hidden="true"></div>
+          <div class="mag-hero-scrim" aria-hidden="true"></div>
+          <div class="mag-hero-inner">
+            <div class="mag-hero-copy">
+              <div class="mag-live-chip">
+                <span class="pulse-live-dot"></span>
+                <span>Portal editorial · ${escapeHtml(profile.username)} (${escapeHtml(formatRole(profile.rol))})</span>
+              </div>
+              <h1>
+                Bienvenida/o<br>
+                <em>Aquí exploras el pulso vivo de la comunidad.</em>
+              </h1>
               <p>
-                Explora los temas que inspiran conversaciones, visualiza el mapa de calor regional y acompaña el pulso en tiempo real sin recargar la página.
+                Recorre las conversaciones, observa las tendencias en tiempo real y navega el atlas interactivo construido con privacidad desde el origen.
               </p>
               <div class="hero-cta-row">
-                <button type="button" class="btn btn-editorial-primary" data-jump="trends">Explorar tendencias</button>
-                <button type="button" class="btn btn-portal-outline" data-jump="map">Ver mapa de calor</button>
-                <button type="button" class="btn btn-portal-ghost" data-jump="members">Conocer miembros</button>
+                <button type="button" class="btn btn-gold" data-jump="map">Explorar atlas real</button>
+                <button type="button" class="btn btn-glass-light" data-jump="trends">Ver tendencias</button>
+                <button type="button" class="btn btn-glass-light" data-jump="members">Galería de miembros</button>
               </div>
             </div>
 
-            <div class="portal-pulse-card" id="portal-pulse-card">
-              <div class="pulse-header">
-                <span class="pulse-live-dot"></span>
-                <span>Pulso en tiempo real</span>
+            <div class="mag-pulse-dock" id="portal-pulse-card">
+              <div class="dock-stat">
+                <span>MIEMBROS</span>
+                <strong id="portal-kpi-users">—</strong>
+                <small id="portal-kpi-artists">Cargando…</small>
               </div>
-              <div class="pulse-metrics">
-                <div class="pulse-metric">
-                  <span class="pulse-label">Miembros de la comunidad</span>
-                  <strong id="portal-kpi-users">—</strong>
-                  <small id="portal-kpi-artists">Cargando datos reales…</small>
-                </div>
-                <div class="pulse-metric">
-                  <span class="pulse-label">Publicaciones y reacciones</span>
-                  <strong id="portal-kpi-activity">—</strong>
-                  <small id="portal-kpi-channels">Canales de actividad</small>
-                </div>
-                <div class="pulse-metric">
-                  <span class="pulse-label">Ánimo de actividad</span>
-                  <strong id="portal-kpi-sentiment">—</strong>
-                  <small id="portal-kpi-sentiment-label">Clima comunitario</small>
-                </div>
-                <div class="pulse-metric">
-                  <span class="pulse-label">Promedio de reacciones</span>
-                  <strong id="portal-kpi-reactions">—</strong>
-                  <small id="portal-kpi-reactions-sub">Por publicación</small>
-                </div>
+              <div class="dock-stat">
+                <span>ACTIVIDAD EN VIVO</span>
+                <strong id="portal-kpi-activity">—</strong>
+                <small id="portal-kpi-channels">Canales activos</small>
+              </div>
+              <div class="dock-stat">
+                <span>CLIMA GENERAL</span>
+                <strong id="portal-kpi-sentiment">—</strong>
+                <small id="portal-kpi-sentiment-label">Ánimo de actividad</small>
+              </div>
+              <div class="dock-stat">
+                <span>REACCIONES / PUB.</span>
+                <strong id="portal-kpi-reactions">—</strong>
+                <small id="portal-kpi-reactions-sub">Promedio dinámico</small>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- TARJETAS SHOWCASE DESTACADAS -->
-          <div class="portal-section-heading">
-            <div>
-              <h2>Destacados de la comunidad</h2>
-              <p>Los canales, intereses y regiones que marcan el ritmo actual.</p>
-            </div>
+        <div class="pulse-strip mag-pulse-strip">
+          <span class="pulse-strip-label">Pulso de hoy</span>
+          <div class="pulse-chips" id="analyst-marquee-track">
+            <span class="pulse-chip static">Cargando datos de la comunidad…</span>
           </div>
-          <div class="showcase-grid" id="portal-showcase-grid">
-            <article class="showcase-card"><div class="loading-row">Preparando destacados…</div></article>
-            <article class="showcase-card"><div class="loading-row">Preparando destacados…</div></article>
-            <article class="showcase-card"><div class="loading-row">Preparando destacados…</div></article>
-          </div>
-        </section>
+        </div>
 
-        <!-- SECCIÓN 2: TENDENCIAS E INSIGHTS -->
-        <section class="portal-section hidden" id="analyst-sec-trends">
-          <div class="portal-section-heading">
-            <div>
-              <span class="editorial-kicker">Análisis visual en vivo</span>
-              <h1>Tendencias y clima comunitario</h1>
-              <p>Compara el ánimo por país, la participación en cada canal y la composición de la comunidad.</p>
-            </div>
+        <div class="mag-container">
+          <div class="mag-chapter-head">
+            <span class="mag-chapter-num">01 / CURADURÍA EN VIVO</span>
+            <h2>Lo que mueve a la comunidad hoy</h2>
+          </div>
+          <div class="mag-showcase-grid" id="portal-showcase-grid">
+            <article class="mag-feature-card"><div class="loading-row">Cargando destacados…</div></article>
+            <article class="mag-feature-card"><div class="loading-row">Cargando destacados…</div></article>
+            <article class="mag-feature-card"><div class="loading-row">Cargando destacados…</div></article>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECCIÓN 2: TENDENCIAS EDITORIALES -->
+      <section class="mag-section hidden" id="analyst-sec-trends">
+        <div class="mag-container mag-page-top">
+          <div class="mag-chapter-head">
+            <span class="mag-chapter-num">02 / TENDENCIAS E INSIGHTS</span>
+            <h1>Clima comunitario y canales activos</h1>
+            <p>Visualizaciones amplias recalculadas automáticamente cuando llegan nuevas publicaciones o reacciones.</p>
           </div>
 
           <div class="editorial-charts-wide">
@@ -142,7 +156,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
               <div class="card-head">
                 <div>
                   <h2>Ánimo promedio por país</h2>
-                  <p>Indicador de clima comunitario basado exclusivamente en ubicaciones autorizadas</p>
+                  <p>Basado exclusivamente en miembros que autorizaron compartir su ubicación</p>
                 </div>
               </div>
               <div class="chart-box tall"><canvas id="analyst-country-chart"></canvas></div>
@@ -152,7 +166,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
               <div class="card-head">
                 <div>
                   <h2>Canales más activos</h2>
-                  <p>Participación por canal actualizada en tiempo real</p>
+                  <p>Participación porcentual en tiempo real</p>
                 </div>
               </div>
               <div class="chart-box tall" id="analyst-channel-wrap"><canvas id="analyst-channel-chart"></canvas></div>
@@ -161,8 +175,8 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
             <article class="editorial-card">
               <div class="card-head">
                 <div>
-                  <h2>Participación de miembros</h2>
-                  <p>Distribución actual de la comunidad por estado</p>
+                  <h2>Estado de participación</h2>
+                  <p>Distribución actual de la comunidad</p>
                 </div>
               </div>
               <div class="chart-box tall"><canvas id="analyst-status-chart"></canvas></div>
@@ -174,7 +188,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
               <div class="card-head">
                 <div>
                   <h2>Intereses más populares</h2>
-                  <p>Temáticas principales elegidas por los miembros</p>
+                  <p>Temáticas favoritas de la comunidad</p>
                 </div>
               </div>
               <div id="analyst-interests-bars" class="ranked-bars"></div>
@@ -183,38 +197,52 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
             <article class="editorial-card">
               <div class="card-head">
                 <div>
-                  <h2>Comunidad por especie y afinidad</h2>
+                  <h2>Afinidades y especies</h2>
                   <p>Top 8 perfiles más representados</p>
                 </div>
               </div>
               <div id="analyst-species-bars" class="ranked-bars"></div>
             </article>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <!-- SECCIÓN 3: MAPA DE CALOR COMUNITARIO A GRAN FORMATO -->
-        <section class="portal-section hidden" id="analyst-sec-map">
-          <div class="portal-section-heading">
+      <!-- SECCIÓN 3: ATLAS INTERACTIVO REAL (CALLES / SATÉLITE / NOCTURNO + HEATMAP + FLYTO) -->
+      <section class="mag-section hidden" id="analyst-sec-map">
+        <div class="mag-container mag-page-top">
+          <div class="mag-chapter-head with-actions">
             <div>
-              <span class="editorial-kicker">Presencia global</span>
-              <h1>Mapa de calor comunitario</h1>
-              <p>Explora las zonas con mayor concentración de miembros que comparten su ubicación de forma voluntaria.</p>
+              <span class="mag-chapter-num">03 / ATLAS DE CALOR INTERACTIVO</span>
+              <h1>Recorre la comunidad en el mapa real</h1>
+              <p>Muévete libremente por el mundo, cambia entre calles y satélite, y haz clic en cualquier ciudad para volar directo.</p>
             </div>
-            <div class="map-mode-toggle editorial-toggle" id="analyst-map-mode">
-              <button type="button" data-mode="heat">Calor</button>
-              <button type="button" data-mode="both" class="active">Combinado</button>
-              <button type="button" data-mode="markers">Marcadores</button>
+            <div class="action-row">
+              <div class="map-mode-toggle editorial-toggle" id="analyst-basemap-mode">
+                <button type="button" data-basemap="streets" class="active">Calles</button>
+                <button type="button" data-basemap="satellite">Satélite</button>
+                <button type="button" data-basemap="topo">Relieve</button>
+                <button type="button" data-basemap="light">Claro</button>
+              </div>
+              <div class="map-mode-toggle editorial-toggle" id="analyst-map-mode">
+                <button type="button" data-mode="heat">Calor</button>
+                <button type="button" data-mode="both" class="active">Combinado</button>
+                <button type="button" data-mode="markers">Marcadores</button>
+              </div>
+              <button type="button" class="btn btn-editorial-primary btn-sm" id="analyst-map-reset">Vista global</button>
             </div>
           </div>
 
           <div class="portal-map-layout">
             <article class="editorial-card map-card-large">
               <div id="analyst-map-canvas" class="map-canvas large"></div>
-              <div class="map-legend">
-                <span><i class="dot emerald"></i> Activo</span>
-                <span><i class="dot amber"></i> En riesgo</span>
-                <span><i class="dot rose"></i> Inactivo</span>
-                <span class="heat-legend-bar"><i class="heat-swatch"></i> Densidad de calor</span>
+              <div class="studio-map-footer light-footer">
+                <div class="map-legend">
+                  <span><i class="dot emerald"></i> Activo</span>
+                  <span><i class="dot amber"></i> En riesgo</span>
+                  <span><i class="dot rose"></i> Inactivo</span>
+                  <span class="heat-legend-bar"><i class="heat-swatch"></i> Densidad de calor</span>
+                </div>
+                <span class="map-tip light-tip">Arrastra el mapa o usa scroll para explorar cualquier ciudad</span>
               </div>
             </article>
 
@@ -222,21 +250,23 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
               <div class="privacy-callout" id="analyst-privacy-callout">
                 Verificando privacidad de miembros…
               </div>
-              <h3>Principales países</h3>
-              <div id="analyst-geo-countries" class="geo-rank-list"></div>
-              <h3 style="margin-top:20px">Ciudades destacadas</h3>
+              <h3>Volar a ciudades destacadas</h3>
               <div id="analyst-geo-cities" class="geo-rank-list compact"></div>
+              <h3 style="margin-top:20px">Resumen por país</h3>
+              <div id="analyst-geo-countries" class="geo-rank-list"></div>
             </aside>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <!-- SECCIÓN 4: EXPLORADOR DE MIEMBROS (TARJETAS + LISTA) -->
-        <section class="portal-section hidden" id="analyst-sec-members">
-          <div class="portal-section-heading">
+      <!-- SECCIÓN 4: GALERÍA VISUAL DE MIEMBROS -->
+      <section class="mag-section hidden" id="analyst-sec-members">
+        <div class="mag-container mag-page-top">
+          <div class="mag-chapter-head with-actions">
             <div>
-              <span class="editorial-kicker">Comunidad</span>
-              <h1>Explorador de miembros</h1>
-              <p>Descubre perfiles, intereses creativos y actividad reciente. Haz clic en cualquier miembro para ver su historia.</p>
+              <span class="mag-chapter-num">04 / COMUNIDAD</span>
+              <h1>Galería de miembros</h1>
+              <p>Explora perfiles creativos, intereses y actividad reciente. Haz clic en cualquier tarjeta para abrir su historia.</p>
             </div>
             <div class="action-row">
               <div class="view-toggle" role="group" aria-label="Cambiar vista">
@@ -284,15 +314,17 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
               <button type="button" class="btn btn-portal-outline btn-sm" id="analyst-next-page">Siguiente</button>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <!-- SECCIÓN 5: CONVERSACIONES (FEED LIMPIO EN VIVO + TRANSPARENCIA DE CALIDAD) -->
-        <section class="portal-section hidden" id="analyst-sec-conversations">
-          <div class="portal-section-heading">
+      <!-- SECCIÓN 5: CONVERSACIONES EN VIVO + TRANSPARENCIA -->
+      <section class="mag-section hidden" id="analyst-sec-conversations">
+        <div class="mag-container mag-page-top">
+          <div class="mag-chapter-head with-actions">
             <div>
-              <span class="editorial-kicker">Actividad en vivo</span>
-              <h1>Conversaciones y pulso en canales</h1>
-              <p>Explora las publicaciones, comentarios y reacciones actualizadas al instante.</p>
+              <span class="mag-chapter-num">05 / CONVERSACIONES EN VIVO</span>
+              <h1>Voces y reacciones en canales</h1>
+              <p>Stream actualizado automáticamente con cada nueva publicación, edición o eliminación.</p>
             </div>
             <span class="pill pill-success">Sincronizado en vivo</span>
           </div>
@@ -326,11 +358,9 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
           </div>
 
           <div class="portal-quality-block">
-            <div class="portal-section-heading compact">
-              <div>
-                <h2>Transparencia e historial de actualizaciones</h2>
-                <p>Resumen de actividad pendiente de vincular y registro de importaciones de la comunidad.</p>
-              </div>
+            <div class="mag-chapter-head compact">
+              <span class="mag-chapter-num">TRANSPARENCIA DE DATOS</span>
+              <h2>Actividad pendiente e historial de importaciones</h2>
             </div>
             <div class="review-split-grid">
               <article class="editorial-card">
@@ -351,7 +381,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
                 <div class="card-head">
                   <div>
                     <h3>Historial de importaciones</h3>
-                    <p>Actualizaciones recientes integradas a la plataforma</p>
+                    <p>Actualizaciones integradas en la plataforma</p>
                   </div>
                 </div>
                 <div class="table-container">
@@ -371,8 +401,8 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
               </article>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </section>
     </div>
   `;
 
@@ -421,10 +451,10 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
 
   function goToSection(section) {
     activeSection = section;
-    root.querySelectorAll('#analyst-nav button').forEach((btn) => {
+    root.querySelectorAll('#analyst-nav button[data-section]').forEach((btn) => {
       btn.classList.toggle('active', btn.dataset.section === section);
     });
-    root.querySelectorAll('.portal-section').forEach((sec) => {
+    root.querySelectorAll('.mag-section').forEach((sec) => {
       sec.classList.toggle('hidden', sec.id !== `analyst-sec-${section}`);
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -446,6 +476,11 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
     goToSection(btn.dataset.section);
   });
 
+  $('#portal-brand-home').addEventListener('click', () => goToSection('home'));
+  root.querySelectorAll('[data-jump]').forEach((btn) => {
+    btn.addEventListener('click', () => goToSection(btn.dataset.jump));
+  });
+
   $('#analyst-map-mode').addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-mode]');
     if (!btn) return;
@@ -454,16 +489,17 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
     setMapLayerMode(mapLayerMode);
   });
 
-  $('#portal-brand-home').addEventListener('click', (e) => {
-    e.preventDefault();
-    goToSection('home');
+  $('#analyst-basemap-mode').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-basemap]');
+    if (!btn) return;
+    mapBasemap = btn.dataset.basemap;
+    root.querySelectorAll('#analyst-basemap-mode button').forEach((b) => b.classList.toggle('active', b === btn));
+    setMapBasemap(mapBasemap);
   });
 
-  root.querySelectorAll('[data-jump]').forEach((btn) => {
-    btn.addEventListener('click', () => goToSection(btn.dataset.jump));
-  });
-
+  $('#analyst-map-reset').addEventListener('click', () => resetMapBounds());
   $('#analyst-switch-btn').addEventListener('click', onSwitchAccount);
+  $('#analyst-rail-switch').addEventListener('click', onSwitchAccount);
   $('#analyst-pwd-btn').addEventListener('click', () => openChangePasswordModal({ api, toast }));
 
   async function loadCatalogs() {
@@ -482,6 +518,30 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
     return summaryCache;
   }
 
+  function updateAnalystMarquee(d) {
+    const track = $('#analyst-marquee-track');
+    if (!track) return;
+    const topInterest = d.top_intereses?.[0]?.nombre || 'Comunidad';
+    const topCountry = d.por_pais?.[0]?.pais || 'Global';
+    const items = [
+      `${formatNumber(d.total_usuarios)} MIEMBROS`,
+      `${formatNumber(d.artistas)} ARTISTAS Y CREADORES`,
+      d.actividad_disponible && d.total_interacciones_validas !== null
+        ? `${formatNumber(d.total_interacciones_validas)} PUBLICACIONES Y REACCIONES`
+        : 'EXPLORACIÓN EN VIVO',
+      `INTERÉS LÍDER: ${topInterest.toUpperCase()}`,
+      `MAYOR PRESENCIA: ${topCountry.toUpperCase()}`,
+      `PRIVACIDAD ACTIVA · ${formatNumber(d.consentimiento_no)} PROTEGIDOS`,
+    ];
+    const sections = ['members', 'members', 'conversations', 'trends', 'map', 'map'];
+    track.innerHTML = items
+      .map(
+        (t, i) =>
+          `<button type="button" class="pulse-chip" data-jump="${sections[i] || 'home'}" title="Ir a esta sección">${escapeHtml(t)}<em>→</em></button>`
+      )
+      .join('');
+  }
+
   function applySummaryToHome(d, highlightLive = false) {
     summaryCache = d;
     const total = Number(d.total_usuarios || 0);
@@ -494,17 +554,17 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
     const sent = formatSentiment(activeSentimentRaw);
 
     $('#portal-kpi-users').textContent = formatNumber(total);
-    $('#portal-kpi-artists').textContent = `${formatNumber(active)} activos (${formatPercent(active, total)}) · ${formatNumber(artists)} artistas`;
+    $('#portal-kpi-artists').textContent = `${formatPercent(active, total)} activos · ${formatNumber(artists)} artistas`;
 
     if (d.actividad_disponible && d.total_interacciones_validas !== null) {
       $('#portal-kpi-activity').textContent = formatNumber(d.total_interacciones_validas);
-      $('#portal-kpi-channels').textContent = `Activa en ${(d.canales || []).length} canales`;
+      $('#portal-kpi-channels').textContent = `En ${(d.canales || []).length} canales`;
       $('#portal-kpi-reactions').textContent =
         d.promedio_reacciones !== null ? Number(d.promedio_reacciones).toFixed(2) : '0.00';
-      $('#portal-kpi-reactions-sub').textContent = `${formatNumber(d.total_reacciones ?? 0)} reacciones totales`;
+      $('#portal-kpi-reactions-sub').textContent = `${formatNumber(d.total_reacciones ?? 0)} totales`;
     } else {
       $('#portal-kpi-activity').textContent = 'En pausa';
-      $('#portal-kpi-channels').textContent = 'Actividad temporalmente no disponible';
+      $('#portal-kpi-channels').textContent = 'Sin conexión temporal';
       $('#portal-kpi-reactions').textContent = '—';
       $('#portal-kpi-reactions-sub').textContent = 'Por publicación';
     }
@@ -512,8 +572,10 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
     $('#portal-kpi-sentiment').textContent = sent.score;
     $('#portal-kpi-sentiment-label').textContent =
       d.actividad_disponible && d.tasa_positividad_actividad !== null
-        ? `${sent.label} · ${d.tasa_positividad_actividad}% positivo`
+        ? `${sent.label} · ${d.tasa_positividad_actividad}% +`
         : sent.label;
+
+    updateAnalystMarquee(d);
 
     const topInterests = (d.top_intereses || []).slice(0, 4);
     const topChannels = (d.canales || []).slice(0, 4);
@@ -521,75 +583,49 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
     const topCountries = (d.por_pais || []).slice(0, 4);
 
     $('#portal-showcase-grid').innerHTML = `
-      <article class="showcase-card">
-        <div class="showcase-kicker violet">Intereses destacados</div>
+      <article class="mag-feature-card">
+        <span class="mag-feature-tag">01 · INTERESES</span>
         <h3>Lo que más reúne a la comunidad</h3>
         <div class="showcase-list">
-          ${topInterests
-            .map(
-              (item) => `
-                <div class="showcase-row">
-                  <span>${escapeHtml(item.nombre)}</span>
-                  <b>${formatNumber(item.total)}</b>
-                </div>
-              `
-            )
-            .join('')}
+          ${topInterests.map((item) => `<div class="showcase-row"><span>${escapeHtml(item.nombre)}</span><b>${formatNumber(item.total)}</b></div>`).join('')}
         </div>
       </article>
 
-      <article class="showcase-card">
-        <div class="showcase-kicker teal">Canales con mayor pulso</div>
-        <h3>${topChannels.length ? 'Participación por canal en vivo' : 'Plataformas favoritas'}</h3>
+      <article class="mag-feature-card featured-dark">
+        <span class="mag-feature-tag gold">02 · CANALES EN VIVO</span>
+        <h3>${topChannels.length ? 'Participación por canal' : 'Espacios favoritos'}</h3>
         <div class="showcase-list">
           ${
             topChannels.length
               ? topChannels
                   .map(
-                    (item) => `
-                      <div class="showcase-row">
-                        <span>${escapeHtml(item.canal)}</span>
-                        <b>${item.tasa_participacion}% (${formatNumber(item.total)})</b>
-                      </div>
-                    `
+                    (item) => `<div class="showcase-row dark-row"><span>${escapeHtml(item.canal)}</span><b>${item.tasa_participacion}% (${formatNumber(item.total)})</b></div>`
                   )
                   .join('')
               : topPlatforms
                   .map(
-                    (item) => `
-                      <div class="showcase-row">
-                        <span>${escapeHtml(item.nombre)}</span>
-                        <b>${formatPercent(item.total, total)}</b>
-                      </div>
-                    `
+                    (item) => `<div class="showcase-row dark-row"><span>${escapeHtml(item.nombre)}</span><b>${formatPercent(item.total, total)}</b></div>`
                   )
                   .join('')
           }
         </div>
       </article>
 
-      <article class="showcase-card">
-        <div class="showcase-kicker amber">Comunidades regionales</div>
+      <article class="mag-feature-card">
+        <span class="mag-feature-tag">03 · REGIONES</span>
         <h3>Países con mayor presencia</h3>
         <div class="showcase-list">
           ${topCountries
             .map((item) => {
               const s = formatSentiment(item.sentimiento_promedio);
-              return `
-                <div class="showcase-row">
-                  <span>${escapeHtml(item.pais)}</span>
-                  <span class="pill pill-${s.tone}">${formatNumber(item.usuarios)} · ${escapeHtml(s.score)}</span>
-                </div>
-              `;
+              return `<div class="showcase-row"><span>${escapeHtml(item.pais)}</span><span class="pill pill-${s.tone}">${formatNumber(item.usuarios)} · ${escapeHtml(s.score)}</span></div>`;
             })
             .join('')}
         </div>
       </article>
     `;
 
-    if (highlightLive) {
-      flashElement($('#portal-pulse-card'));
-    }
+    if (highlightLive) flashElement($('#portal-pulse-card'));
   }
 
   async function loadHomeAndSummary() {
@@ -634,7 +670,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       buildBarConfig({
         labels: countries.map((x) => x.pais),
         data: countries.map((x) => Number(Number(x.sentimiento_promedio || 0).toFixed(2))),
-        color: '#5b46f6',
+        color: '#2d4a3e',
         yFormat: (v) => `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(2)}`,
       })
     );
@@ -647,16 +683,14 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
         buildBarConfig({
           labels: d.canales.map((x) => `${x.canal} (${x.tasa_participacion}%)`),
           data: d.canales.map((x) => x.total),
-          color: '#0d9488',
+          color: '#c98a2c',
           horizontal: true,
           valueSuffix: ' registros',
         })
       );
     } else {
       channelWrap.innerHTML = `<div class="empty-state">${
-        d.actividad_disponible
-          ? 'Aún no hay actividad registrada por canal.'
-          : 'Los datos de canales no están disponibles en este momento.'
+        d.actividad_disponible ? 'Aún no hay actividad registrada por canal.' : 'Los datos de canales no están disponibles en este momento.'
       }</div>`;
     }
 
@@ -665,16 +699,14 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       buildDoughnutConfig({
         labels: ['Activos', 'En riesgo', 'Inactivos'],
         data: [Number(d.activos || 0), Number(d.en_riesgo || 0), Number(d.inactivos || 0)],
-        colors: ['#0d9488', '#f59e0b', '#e11d48'],
+        colors: ['#2d6a4f', '#e09f3e', '#bc4749'],
       })
     );
 
-    renderRankedBars('analyst-interests-bars', d.top_intereses, 'total', 'nombre', 'violet');
-    renderRankedBars('analyst-species-bars', d.top_especies, 'total', 'nombre', 'teal');
+    renderRankedBars('analyst-interests-bars', d.top_intereses, 'total', 'nombre', 'forest');
+    renderRankedBars('analyst-species-bars', d.top_especies, 'total', 'nombre', 'gold');
 
-    if (highlightLive) {
-      flashElement($('#analyst-channel-card'));
-    }
+    if (highlightLive) flashElement($('#analyst-channel-card'));
   }
 
   async function loadTrends() {
@@ -684,6 +716,22 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
     } catch (err) {
       toast(err.message, true);
     }
+  }
+
+  function buildCityCentroids(points) {
+    const map = new Map();
+    for (const p of points) {
+      if (p.latitud == null || p.longitud == null) continue;
+      const key = `${p.ciudad}|${p.pais}`;
+      if (!map.has(key)) map.set(key, { ciudad: p.ciudad, pais: p.pais, latSum: 0, lngSum: 0, count: 0 });
+      const entry = map.get(key);
+      entry.latSum += Number(p.latitud);
+      entry.lngSum += Number(p.longitud);
+      entry.count += 1;
+    }
+    return [...map.values()]
+      .map((c) => ({ ciudad: c.ciudad, pais: c.pais, lat: c.latSum / c.count, lng: c.lngSum / c.count, usuarios: c.count }))
+      .sort((a, b) => b.usuarios - a.usuarios);
   }
 
   async function loadMap() {
@@ -698,9 +746,26 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
 
       callout.innerHTML = `
         <strong>Privacidad primero</strong>
-        <p>${formatNumber(protectedRes.total)} miembros eligieron mantener su ubicación privada y están excluidos de este mapa de calor (${formatNumber(points.length)} ubicaciones autorizadas visibles).</p>
+        <p>${formatNumber(protectedRes.total)} miembros eligieron mantener su ubicación privada y están excluidos de este atlas (${formatNumber(points.length)} ubicaciones autorizadas visibles).</p>
       `;
-      renderCommunityMap('analyst-map-canvas', points, { theme: 'voyager', mode: mapLayerMode });
+      renderCommunityMap('analyst-map-canvas', points, { theme: mapBasemap, mode: mapLayerMode });
+
+      const cities = buildCityCentroids(points).slice(0, 7);
+      $('#analyst-geo-cities').innerHTML = cities.length
+        ? cities
+            .map(
+              (c) => `
+                <button type="button" class="geo-fly-item light-fly" data-lat="${c.lat}" data-lng="${c.lng}">
+                  <div>
+                    <strong>${escapeHtml(c.ciudad)}</strong>
+                    <small>${escapeHtml(c.pais)}</small>
+                  </div>
+                  <b>${formatNumber(c.usuarios)} →</b>
+                </button>
+              `
+            )
+            .join('')
+        : '<div class="empty-state compact">Sin ciudades destacadas.</div>';
 
       const countries = (summary?.por_pais || []).slice(0, 6);
       $('#analyst-geo-countries').innerHTML = countries.length
@@ -719,28 +784,17 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
             })
             .join('')
         : '<div class="empty-state compact">Sin resumen regional.</div>';
-
-      const cities = (summary?.por_ciudad || []).slice(0, 6);
-      $('#analyst-geo-cities').innerHTML = cities.length
-        ? cities
-            .map(
-              (c) => `
-                <div class="geo-rank-item">
-                  <div>
-                    <strong>${escapeHtml(c.ciudad)}</strong>
-                    <small>${escapeHtml(c.pais)}</small>
-                  </div>
-                  <b>${formatNumber(c.usuarios)}</b>
-                </div>
-              `
-            )
-            .join('')
-        : '<div class="empty-state compact">Sin ciudades destacadas.</div>';
     } catch (err) {
-      callout.textContent = 'No fue posible cargar el mapa comunitario.';
+      callout.textContent = 'No fue posible cargar el atlas comunitario.';
       toast(err.message, true);
     }
   }
+
+  $('#analyst-geo-cities').addEventListener('click', (e) => {
+    const btn = e.target.closest('.geo-fly-item');
+    if (!btn) return;
+    flyToLocation(btn.dataset.lat, btn.dataset.lng, 10);
+  });
 
   function buildMemberParams(includePage = true) {
     const q = new URLSearchParams();
@@ -770,24 +824,23 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       host.innerHTML = `
         <div class="member-cards-grid">
           ${latestMembers
-            .map((u) => {
+            .map((u, idx) => {
               const sent = formatSentiment(u.sentimiento_promedio);
+              const coverTone = `tone-${idx % 4}`;
               return `
-                <article class="member-profile-card" data-member-id="${escapeHtml(u.id_usuario)}" tabindex="0" role="button">
-                  <div class="member-card-top">
-                    ${avatarHtml(u.alias, 'md')}
-                    <div class="member-card-badges">
-                      ${statusBadge(u.estatus)}
-                      ${Number(u.es_artista) === 1 ? '<span class="pill pill-violet">Artista</span>' : ''}
-                    </div>
+                <article class="member-profile-card portrait-card" data-member-id="${escapeHtml(u.id_usuario)}" tabindex="0" role="button">
+                  <div class="portrait-ribbon ${coverTone}">
+                    ${statusBadge(u.estatus)}
+                    ${Number(u.es_artista) === 1 ? '<span class="pill pill-amber">Artista</span>' : ''}
                   </div>
-                  <div class="member-card-identity">
+                  <div class="portrait-body">
+                    <div class="portrait-avatar-lift">${avatarHtml(u.alias, 'md')}</div>
                     <h3>${escapeHtml(u.alias)}</h3>
-                    <span>${escapeHtml(u.especie_fursona || 'Comunidad')} · ${escapeHtml(u.plataforma_principal)}</span>
-                  </div>
-                  <div class="member-card-tags">
-                    <span class="tag-chip">${escapeHtml(u.interes_principal || 'General')}</span>
-                    <span class="tag-chip">${escapeHtml(u.rango_edad)} años</span>
+                    <span class="portrait-sub">${escapeHtml(u.especie_fursona || 'Comunidad')} · ${escapeHtml(u.plataforma_principal)}</span>
+                    <div class="member-card-tags">
+                      <span class="tag-chip">${escapeHtml(u.interes_principal || 'General')}</span>
+                      <span class="tag-chip">${escapeHtml(u.rango_edad)} años</span>
+                    </div>
                   </div>
                   <div class="member-card-foot">
                     <span>Activo: <b>${escapeHtml(formatDate(u.ultima_actividad))}</b></span>
@@ -849,7 +902,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
 
   async function loadMembers() {
     const host = $('#analyst-members-host');
-    host.innerHTML = '<div class="editorial-card"><div class="loading-row">Cargando perfiles de la comunidad…</div></div>';
+    host.innerHTML = '<div class="editorial-card"><div class="loading-row">Cargando galería de miembros…</div></div>';
     try {
       const data = await api(`/api/usuarios?${buildMemberParams(true)}`);
       latestMembers = data.items || [];
@@ -948,9 +1001,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
 
   async function loadFeed(reset = false) {
     const list = $('#analyst-feed-list');
-    if (reset) {
-      list.innerHTML = '<div class="editorial-card"><div class="loading-row">Cargando conversaciones de la comunidad…</div></div>';
-    }
+    if (reset) list.innerHTML = '<div class="editorial-card"><div class="loading-row">Cargando conversaciones de la comunidad…</div></div>';
     try {
       const q = new URLSearchParams({ limit: '18' });
       const uid = $('#analyst-feed-user').value.trim();
@@ -967,17 +1018,11 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       $('#analyst-feed-more').disabled = !feedCursor;
 
       const html = (data.items || []).map((item) => renderFeedCard(item, false)).join('');
-
-      if (html) {
-        list.insertAdjacentHTML('beforeend', html);
-      } else if (reset) {
-        list.innerHTML = '<div class="editorial-card"><div class="empty-state">No hay conversaciones que coincidan con los filtros.</div></div>';
-      }
+      if (html) list.insertAdjacentHTML('beforeend', html);
+      else if (reset) list.innerHTML = '<div class="editorial-card"><div class="empty-state">No hay conversaciones que coincidan con los filtros.</div></div>';
       $('#analyst-feed-meta').textContent = `${list.querySelectorAll('.feed-post-card').length} publicaciones cargadas`;
     } catch (err) {
-      if (reset) {
-        list.innerHTML = `<div class="editorial-card"><div class="inline-notice warning">${escapeHtml(err.message)}</div></div>`;
-      }
+      if (reset) list.innerHTML = `<div class="editorial-card"><div class="inline-notice warning">${escapeHtml(err.message)}</div></div>`;
       $('#analyst-feed-more').disabled = true;
     }
   }
@@ -1035,9 +1080,7 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       else if (reset) pendingList.innerHTML = '<div class="empty-state compact">No hay actividad pendiente de vincular.</div>';
       $('#analyst-pending-meta').textContent = `${pendingList.querySelectorAll('.activity-card').length} registros`;
     } else {
-      if (reset) {
-        pendingList.innerHTML = `<div class="inline-notice warning">${escapeHtml(pendingRes.reason?.message || 'No fue posible consultar la actividad pendiente en este momento.')}</div>`;
-      }
+      if (reset) pendingList.innerHTML = `<div class="inline-notice warning">${escapeHtml(pendingRes.reason?.message || 'No fue posible consultar la actividad pendiente.')}</div>`;
       $('#analyst-more-pending').disabled = true;
     }
 
@@ -1081,12 +1124,11 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
   });
 
   function onRealtimeStatus(status) {
-    const badge = $('#analyst-live-status');
-    if (!badge) return;
-    badge.className = `live-pill ${status}`;
-    const label =
-      status === 'live' ? 'En vivo' : status === 'reconnecting' ? 'Reconectando…' : status === 'connecting' ? 'Conectando…' : 'Sin conexión';
-    badge.innerHTML = `<i class="live-dot"></i><span>${label}</span>`;
+    const dot = $('#analyst-live-status');
+    if (!dot) return;
+    dot.className = `rail-live-indicator ${status}`;
+    dot.title =
+      status === 'live' ? 'Conectado en vivo' : status === 'reconnecting' ? 'Reconectando…' : status === 'connecting' ? 'Conectando…' : 'Sin conexión';
   }
 
   function onRealtimeEvent(eventName, payload) {
@@ -1124,6 +1166,11 @@ export function mountAnalystView(root, { api, profile, onSwitchAccount, toast })
       }
     }
   }
+
+  $('#analyst-marquee-track').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-jump]');
+    if (chip) goToSection(chip.dataset.jump);
+  });
 
   loadCatalogs();
   loadHomeAndSummary();

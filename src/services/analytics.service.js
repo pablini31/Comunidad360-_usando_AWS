@@ -10,25 +10,22 @@ function logDynamoDegraded(context, err) {
 }
 
 async function computeAnalyticsSummary() {
-  const [
-    [[totals]],
-    [platforms],
-    [species],
-    [interests],
-    [geoRows],
-    [consentedRows],
-  ] = await Promise.all([
-    pool.execute(
-      "SELECT COUNT(*) total_usuarios,SUM(estatus='activo') activos,SUM(estatus='en_riesgo') en_riesgo,SUM(estatus='inactivo') inactivos,SUM(consentimiento_datos='si') consentimiento_si,SUM(consentimiento_datos='no') consentimiento_no,SUM(es_artista=1) artistas,AVG(sentimiento_promedio) sentimiento_promedio FROM usuarios"
-    ),
-    pool.execute('SELECT plataforma_principal nombre,COUNT(*) total FROM usuarios GROUP BY plataforma_principal ORDER BY total DESC'),
-    pool.execute('SELECT especie_fursona nombre,COUNT(*) total FROM usuarios GROUP BY especie_fursona ORDER BY total DESC LIMIT 10'),
-    pool.execute('SELECT interes_principal nombre,COUNT(*) total FROM usuarios GROUP BY interes_principal ORDER BY total DESC LIMIT 10'),
-    pool.execute(
-      "SELECT p.nombre pais,c.nombre ciudad,COUNT(DISTINCT u.id_usuario) usuarios,AVG(u.sentimiento_promedio) sentimiento_promedio FROM usuarios u JOIN ciudades c ON c.ciudad_id=u.ciudad_id JOIN estados e ON e.estado_id=c.estado_id JOIN paises p ON p.pais_id=e.pais_id WHERE u.consentimiento_datos='si' GROUP BY p.nombre,c.nombre ORDER BY usuarios DESC"
-    ),
-    pool.execute("SELECT id_usuario FROM usuarios WHERE consentimiento_datos='si'"),
-  ]);
+  const [[totals]] = await pool.execute(
+    "SELECT COUNT(*) total_usuarios,SUM(estatus='activo') activos,SUM(estatus='en_riesgo') en_riesgo,SUM(estatus='inactivo') inactivos,SUM(consentimiento_datos='si') consentimiento_si,SUM(consentimiento_datos='no') consentimiento_no,SUM(es_artista=1) artistas,AVG(sentimiento_promedio) sentimiento_promedio FROM usuarios"
+  );
+  const [platforms] = await pool.execute(
+    'SELECT plataforma_principal nombre,COUNT(*) total FROM usuarios GROUP BY plataforma_principal ORDER BY total DESC'
+  );
+  const [species] = await pool.execute(
+    'SELECT especie_fursona nombre,COUNT(*) total FROM usuarios GROUP BY especie_fursona ORDER BY total DESC LIMIT 10'
+  );
+  const [interests] = await pool.execute(
+    'SELECT interes_principal nombre,COUNT(*) total FROM usuarios GROUP BY interes_principal ORDER BY total DESC LIMIT 10'
+  );
+  const [geoRows] = await pool.execute(
+    "SELECT p.nombre pais,c.nombre ciudad,COUNT(DISTINCT u.id_usuario) usuarios,AVG(u.sentimiento_promedio) sentimiento_promedio FROM usuarios u JOIN ciudades c ON c.ciudad_id=u.ciudad_id JOIN estados e ON e.estado_id=c.estado_id JOIN paises p ON p.pais_id=e.pais_id WHERE u.consentimiento_datos='si' GROUP BY p.nombre,c.nombre ORDER BY usuarios DESC"
+  );
+  const [consentedRows] = await pool.execute("SELECT id_usuario FROM usuarios WHERE consentimiento_datos='si'");
 
   const consentedUsers = new Set(consentedRows.map((row) => row.id_usuario));
   let interactions = [];

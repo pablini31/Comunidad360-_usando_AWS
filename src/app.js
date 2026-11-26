@@ -32,6 +32,8 @@ app.use(
           'blob:',
           'https://*.basemaps.cartocdn.com',
           'https://*.cartocdn.com',
+          'https://server.arcgisonline.com',
+          'https://services.arcgisonline.com',
           'https://unpkg.com',
         ],
         'connect-src': [
@@ -40,6 +42,8 @@ app.use(
           'wss:',
           'https://*.basemaps.cartocdn.com',
           'https://*.cartocdn.com',
+          'https://server.arcgisonline.com',
+          'https://services.arcgisonline.com',
           'https://cdn.jsdelivr.net',
           'https://unpkg.com',
         ],
