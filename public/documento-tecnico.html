@@ -3,36 +3,35 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Documento Técnico — COMMUNITY 360</title>
+  <title>PROY_U3_Final — COMMUNITY 360: Arquitectura de datos en la nube y dashboard analítico en tiempo real</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <style>
     :root {
-      --bg: #fbf8f3;
+      --bg: #f6f3ed;
       --paper: #ffffff;
-      --ink: #1f2a37;
-      --muted: #5b6472;
-      --line: #e4ddd0;
+      --ink: #1e2430;
+      --muted: #555e6d;
+      --line: #dfd7c9;
+      --accent: #0f5e6b;
       --coral: #ee6c4d;
-      --teal: #0f5e6b;
-      --forest: #2a6b55;
-      --soft: #f4efe6;
+      --soft: #f5f1e8;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font-family: 'Plus Jakarta Sans', 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 13.5px;
-      line-height: 1.6;
+      line-height: 1.72;
     }
     .toolbar {
       position: sticky;
       top: 0;
       z-index: 20;
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.94);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--line);
       padding: 12px 28px;
@@ -45,9 +44,8 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 800;
-      font-size: 14px;
+      font-size: 13.5px;
     }
     .dot {
       width: 10px;
@@ -71,57 +69,82 @@
     .btn-coral { background: var(--coral); color: #fff; }
     .btn-outline { background: #fff; border-color: var(--line); color: var(--ink); }
     .sheet {
-      max-width: 980px;
+      max-width: 960px;
       margin: 28px auto 64px;
       background: var(--paper);
       border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 48px 54px;
+      border-radius: 16px;
+      padding: 56px 64px;
       box-shadow: 0 18px 45px -24px rgba(31, 42, 55, 0.2);
     }
-    .cover-kicker {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      color: var(--coral);
-      text-transform: uppercase;
+    /* Portada APA 7 */
+    .apa-cover {
+      min-height: 760px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: center;
+      padding: 40px 24px 28px;
+      border-bottom: 2px solid var(--soft);
+      margin-bottom: 36px;
     }
-    h1 {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 30px;
-      line-height: 1.12;
-      margin: 8px 0 12px;
+    .apa-cover-top {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+    .apa-cover-title h1 {
+      font-size: 26px;
+      line-height: 1.3;
+      margin: 0 auto 18px;
+      max-width: 720px;
+      color: var(--ink);
+    }
+    .apa-cover-meta {
+      font-size: 14.5px;
+      line-height: 1.9;
+    }
+    .apa-cover-meta strong {
+      color: var(--ink);
+    }
+    .editable-hint {
+      display: inline-block;
+      background: #fff7ed;
+      border: 1px dashed #f97316;
+      padding: 2px 8px;
+      border-radius: 6px;
+      color: #9a3412;
+      font-weight: 600;
     }
     h2 {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 19px;
+      font-size: 18.5px;
       margin: 34px 0 12px;
-      padding-bottom: 8px;
+      padding-bottom: 7px;
       border-bottom: 2px solid var(--soft);
-      color: var(--teal);
+      color: var(--accent);
     }
     h3 {
       font-size: 15px;
-      margin: 20px 0 8px;
+      margin: 22px 0 8px;
       color: var(--ink);
     }
-    p { margin: 0 0 10px; }
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin: 20px 0 28px;
-      padding: 14px;
-      background: var(--soft);
-      border-radius: 12px;
+    p {
+      margin: 0 0 12px;
+      text-align: justify;
     }
-    .meta-grid div span { display: block; font-size: 10.5px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
-    .meta-grid div strong { font-size: 13px; }
+    ul {
+      margin: 0 0 14px;
+      padding-left: 22px;
+    }
+    li {
+      margin-bottom: 6px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 12px 0 20px;
+      margin: 14px 0 22px;
       font-size: 12.2px;
     }
     th, td {
@@ -135,66 +158,60 @@
       font-weight: 700;
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
     }
-    code, pre {
-      font-family: Consolas, 'Courier New', monospace;
-      font-size: 11.8px;
-    }
-    pre {
-      background: #faf7f1;
+    .evidence-card {
       border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 12px 14px;
-      overflow-x: auto;
-      margin: 8px 0 16px;
-    }
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-    .formula-box {
-      background: #faf7f1;
-      border-left: 4px solid var(--coral);
-      padding: 12px 16px;
-      border-radius: 0 10px 10px 0;
-      margin: 10px 0 14px;
-    }
-    .formula-box strong { display: block; color: var(--teal); margin-bottom: 4px; }
-    .evidence-slot {
-      border: 2px dashed #d3c9b8;
-      background: #fdfbf7;
+      background: #fcfaf6;
       border-radius: 12px;
-      padding: 22px 18px;
-      text-align: center;
-      color: var(--muted);
-      margin: 12px 0 18px;
-      font-size: 12.5px;
-    }
-    .schema-diagram {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      padding: 16px 18px;
       margin: 14px 0 20px;
     }
-    .schema-box {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px 14px;
-      background: #fff;
-    }
-    .schema-box h4 {
+    .evidence-card h4 {
       margin: 0 0 6px;
-      font-size: 13px;
-      color: var(--teal);
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 5px;
+      font-size: 13.5px;
+      color: var(--accent);
     }
-    .schema-box ul {
-      margin: 0;
-      padding-left: 16px;
-      font-size: 11.8px;
+    .evidence-slot {
+      border: 2px dashed #cbbba0;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 28px 18px;
+      text-align: center;
+      color: var(--muted);
+      margin: 10px 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .evidence-slot:hover {
+      border-color: var(--coral);
+      background: #fff9f5;
+    }
+    .evidence-slot.has-image {
+      border-style: solid;
+      border-width: 1px;
+      padding: 6px;
+    }
+    .evidence-slot img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 7px;
+      display: block;
+      margin: 0 auto;
+    }
+    .credentials-box {
+      background: #f4faf7;
+      border: 1px solid #b7e1cd;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin: 14px 0 20px;
+    }
+    .apa-ref {
+      padding-left: 32px;
+      text-indent: -32px;
+      margin-bottom: 10px;
     }
     @media print {
       body { background: #fff; }
@@ -207,6 +224,7 @@
         box-shadow: none;
       }
       .page-break { page-break-before: always; }
+      .editable-hint { border: 0; background: transparent; color: inherit; padding: 0; }
     }
   </style>
   <script defer src="/modules/reportPrint.js"></script>
@@ -215,191 +233,234 @@
   <header class="toolbar">
     <div class="toolbar-brand">
       <span class="dot"></span>
-      <span>COMMUNITY 360 · DOCUMENTO TÉCNICO FINAL (FASES 1 A 6)</span>
+      <span>PROY_U3_Final · DOCUMENTO EN FORMATO APA 7 (haz clic en cualquier texto para personalizarlo antes de imprimir)</span>
     </div>
     <div style="display:flex;gap:10px">
       <a href="/" class="btn btn-outline">← Volver al Dashboard</a>
-      <button type="button" id="print-pdf-btn" class="btn btn-coral">Imprimir / Guardar como PDF</button>
+      <button type="button" id="print-pdf-btn" class="btn btn-coral">Guardar como PDF (APA 7)</button>
     </div>
   </header>
 
-  <main class="sheet">
-    <span class="cover-kicker">Bases de Datos en la Nube · Unidad III</span>
-    <h1>COMMUNITY 360: Arquitectura de Datos Híbrida en la Nube y Dashboard Analítico en Tiempo Real</h1>
-    <p>Persistencia híbrida SQL + NoSQL en AWS (Amazon RDS for MariaDB + Amazon DynamoDB), proceso ETL con anonimización por privacidad, autenticación JWT/RBAC, API REST validada y consumo reactivo mediante WebSockets.</p>
+  <main class="sheet" contenteditable="true" spellcheck="true">
+    <!-- 1. PORTADA INSTITUCIONAL (APA 7) -->
+    <section class="apa-cover">
+      <div class="apa-cover-top">Entregable Final · Unidad III</div>
 
-    <div class="meta-grid">
-      <div><span>Asignatura</span><strong>Bases de Datos en la Nube</strong></div>
-      <div><span>Arquitectura Cloud</span><strong>AWS RDS MariaDB + DynamoDB</strong></div>
-      <div><span>Región AWS</span><strong>us-east-2 (Ohio · Free Tier)</strong></div>
-      <div><span>Tiempo Real</span><strong>REST + Socket.io WebSockets</strong></div>
-    </div>
+      <div class="apa-cover-title">
+        <h1>COMMUNITY 360: Arquitectura de datos en la nube y dashboard analítico en tiempo real</h1>
+        <p style="text-align:center;color:var(--muted);max-width:620px;margin:0 auto">
+          Persistencia híbrida relacional y documental en Amazon Web Services con actualización reactiva mediante WebSockets y resguardo de privacidad geográfica
+        </p>
+      </div>
 
-    <h2>1. Contextualización y Condición Obligatoria de Privacidad</h2>
-    <p>La comunidad virtual y presencial <strong>Community 360</strong> integra información proveniente de dos archivos CSV fuente: <code>comunidad_virtual_usuarios.csv</code> (<strong>1,068 registros</strong>) y <code>comunidad_virtual_1000_interacciones.csv</code> (<strong>1,000 registros</strong>). Los archivos originales presentaban fechas heterogéneas (<code>DD/MM/YYYY</code>), reacciones sin texto con longitud distinta de cero, etiquetas multivaluadas separadas por <code>|</code> y <strong>793 interacciones</strong> cuyo <code>id_usuario</code> no existía en el padrón.</p>
-    <p><strong>Cumplimiento de privacidad (<code>consentimiento_datos = "no"</code>):</strong> Los <strong>171 miembros</strong> que no autorizaron compartir su ubicación tienen su país, estado, ciudad, zona horaria, latitud y longitud eliminados (<code>NULL</code>) tanto en el proceso ETL como mediante triggers <code>BEFORE INSERT</code> / <code>BEFORE UPDATE</code> en MariaDB y filtros de proyección en la API REST y en el mapa de calor.</p>
+      <div class="apa-cover-meta">
+        <div><strong>Alumno:</strong> <span class="editable-hint">[Escribe aquí tu Nombre Completo]</span></div>
+        <div><strong>Universidad:</strong> Universidad Tecnológica Metropolitana (UTM)</div>
+        <div><strong>Carrera:</strong> Ingeniería / T.S.U. en Tecnologías de la Información (Desarrollo de Software Multiplataforma)</div>
+        <div><strong>Asignatura:</strong> Bases de Datos en la Nube (Unidad III)</div>
+        <div><strong>Docente:</strong> Mtro. Lizandro Reyes</div>
+        <div><strong>Fecha de entrega:</strong> 26 de noviembre de 2026</div>
+      </div>
+    </section>
 
-    <h2>2. Exploración Tecnológica y Comparativa SQL vs. NoSQL (Fase 1)</h2>
+    <div class="page-break"></div>
+
+    <!-- 2. DESCRIPCIÓN GENERAL DEL SISTEMA Y SOLUCIÓN PLANTEADA -->
+    <h2>2. Descripción General del Sistema y Solución Planteada</h2>
+    <p>
+      El proyecto <strong>Community 360</strong> surgió con el propósito de unificar en una sola plataforma web la información dispersa de una comunidad virtual y presencial conformada por <strong>1,068 miembros</strong> y un flujo inicial de <strong>1,000 registros de actividad</strong>. Antes de construir la solución, los archivos fuente presentaban problemas habituales en entornos reales: fechas capturadas en distintos formatos, reacciones que reportaban longitud de texto incorrecta, listas de etiquetas concatenadas en una sola celda y <strong>793 interacciones</strong> cuyo identificador de autor no existía dentro del padrón de miembros. Además, existía una condición ética y técnica innegociable: <strong>171 miembros</strong> manifestaron explícitamente que no autorizaban compartir su ubicación geográfica.
+    </p>
+    <p>
+      Para resolver esta problemática diseñé una aplicación web con arquitectura híbrida en la nube de <strong>Amazon Web Services (AWS)</strong> dentro de la región <strong>us-east-2 (Ohio)</strong>. El padrón estructurado de miembros y los catálogos geográficos normalizados en Tercera Forma Normal (países, estados y ciudades) se almacenaron en <strong>Amazon RDS for MariaDB</strong>, mientras que las publicaciones, comentarios y reacciones —junto con la bandeja separada de registros en cuarentena— se alojaron en <strong>Amazon DynamoDB</strong> para aprovechar su flexibilidad documental y sus índices secundarios globales.
+    </p>
+
+    <h3>Módulos Integrados en la Solución</h3>
+    <ul>
+      <li><strong>Módulo de Autenticación y Control de Acceso (Login y Registro):</strong> Implementa inicio de sesión mediante usuario o correo electrónico verificando contraseñas cifradas con <em>bcrypt</em> en MariaDB y emitiendo tokens JWT con control de roles (<em>Administrador</em> con permisos operativos completos y <em>Analista</em> con vista editorial de consulta).</li>
+      <li><strong>Módulo de Consulta Histórica y Analítica (API REST):</strong> Expone rutas paginadas y validadas con esquemas estrictos para explorar el padrón de miembros, filtrar conversaciones por canal, tipo o rango de fechas sobre índices secundarios en DynamoDB y auditar los registros retenidos en cuarentena.</li>
+      <li><strong>Módulo de Actualización en Vivo (WebSockets con Socket.io):</strong> Mantiene un canal bidireccional autenticado entre el servidor y el navegador. Cada vez que se registra, edita o elimina una interacción mediante la API, el servidor recalcula los indicadores y emite eventos en tiempo real que actualizan las tarjetas, gráficas y listas del dashboard sin recargar la página.</li>
+      <li><strong>Módulo de Privacidad Geográfica desde el Origen:</strong> Garantiza en tres niveles (proceso ETL, disparadores en MariaDB y filtrado en la API REST) que ningún miembro sin consentimiento conserve coordenadas ni aparezca en el mapa interactivo, protegiendo a los 171 perfiles reservados.</li>
+    </ul>
+
+    <h3>Resumen de la API REST Desarrollada (21 Endpoints)</h3>
+    <p>
+      El backend cuenta con <strong>21 endpoints REST</strong> organizados por dominio operativo. En la siguiente tabla se detalla el propósito de cada ruta y la forma en que interactúa con el dashboard:
+    </p>
     <table>
       <thead>
         <tr>
-          <th>Criterio Técnico</th>
-          <th>SQL — Amazon RDS for MariaDB</th>
-          <th>NoSQL — Amazon DynamoDB</th>
-          <th>Justificación en Community 360</th>
+          <th>#</th>
+          <th>Método y Ruta</th>
+          <th>Propósito del Endpoint</th>
+          <th>Interacción con el Dashboard / Cliente</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td><strong>Estructura y Relaciones</strong></td>
-          <td>Esquema normalizado en 3FN (<code>paises</code>, <code>estados</code>, <code>ciudades</code>, <code>usuarios</code>).</td>
-          <td>Documentos JSON flexibles con listas nativas (<code>etiquetas</code>) y mapas opcionales (<code>ubicacion</code>).</td>
-          <td>Evita redundancia en el padrón y permite atributos opcionales en interacciones.</td>
-        </tr>
-        <tr>
-          <td><strong>Integridad Referencial</strong></td>
-          <td>Llaves foráneas (<code>FOREIGN KEY</code>), restricciones <code>CHECK</code> y triggers.</td>
-          <td>Validada en el ETL y en la API antes de escribir en DynamoDB.</td>
-          <td>Las 793 interacciones sin usuario válido se derivan a <code>community360_cuarentena</code>.</td>
-        </tr>
-        <tr>
-          <td><strong>Consultas y Agregaciones</strong></td>
-          <td>Consultas analíticas con <code>JOIN</code>, <code>GROUP BY</code>, <code>AVG</code>, <code>SUM</code>.</td>
-          <td>Lecturas por clave primaria y GSIs (<code>gsi_canal_fecha</code>, <code>gsi_usuario_fecha</code>).</td>
-          <td>Consultas históricas paginadas por cursor y resumen híbrido con caché TTL.</td>
-        </tr>
-        <tr>
-          <td><strong>Costos y Límites Cloud</strong></td>
-          <td>RDS <code>db.t3.micro</code> Free Tier con pool de 5 conexiones TLS.</td>
-          <td>Capa gratuita aprovisionada en <strong>5 RCU / 5 WCU</strong> con backoff exponencial.</td>
-          <td>Operación 100% dentro de la capa gratuita de AWS sin estrangulamiento.</td>
-        </tr>
+        <tr><td>1</td><td><strong>GET /api/health</strong></td><td>Verificación de disponibilidad del servicio.</td><td>Monitor de salud para el despliegue continuo en Render.</td></tr>
+        <tr><td>2</td><td><strong>POST /api/auth/login</strong></td><td>Autenticación con usuario o correo y clave.</td><td>Valida credenciales en MariaDB y entrega el JWT al iniciar sesión.</td></tr>
+        <tr><td>3</td><td><strong>POST /api/auth/register</strong></td><td>Registro de nuevas cuentas de acceso.</td><td>Alimenta la pestaña "Crear cuenta" desde la pantalla de acceso.</td></tr>
+        <tr><td>4</td><td><strong>GET /api/auth/me</strong></td><td>Recuperación de la sesión activa.</td><td>Restaura el perfil y el rol al abrir o refrescar el navegador.</td></tr>
+        <tr><td>5</td><td><strong>POST /api/auth/change-password</strong></td><td>Actualización segura de contraseña.</td><td>Conectado al modal "Clave" en la barra superior de ambos roles.</td></tr>
+        <tr><td>6</td><td><strong>GET /api/admins</strong></td><td>Listado de cuentas operativas del sistema.</td><td>Puebla la tabla de la pestaña "Accesos" en la vista Administrador.</td></tr>
+        <tr><td>7</td><td><strong>POST /api/admins</strong></td><td>Alta de administradores o analistas.</td><td>Conectado al modal de nueva cuenta dentro del panel de Accesos.</td></tr>
+        <tr><td>8</td><td><strong>PATCH /api/admins/:id/activo</strong></td><td>Activación o suspensión de cuentas.</td><td>Permite habilitar o pausar accesos desde la tabla de Accesos.</td></tr>
+        <tr><td>9</td><td><strong>DELETE /api/admins/:id</strong></td><td>Baja definitiva de una cuenta operativa.</td><td>Elimina cuentas secundarias desde la vista de Accesos.</td></tr>
+        <tr><td>10</td><td><strong>GET /api/catalogos/ubicaciones</strong></td><td>Árbol jerárquico País → Estado → Ciudad.</td><td>Llena los selectores geográficos y filtros por país y ciudad.</td></tr>
+        <tr><td>11</td><td><strong>GET /api/usuarios</strong></td><td>Consulta paginada y filtrada de miembros.</td><td>Alimenta el directorio de miembros y el modal de miembros por ciudad.</td></tr>
+        <tr><td>12</td><td><strong>GET /api/usuarios/export</strong></td><td>Exportación del padrón filtrado a CSV.</td><td>Descarga el reporte de miembros respetando la anonimización.</td></tr>
+        <tr><td>13</td><td><strong>GET /api/usuarios/:id</strong></td><td>Ficha individual e historial reciente.</td><td>Abre el modal de perfil combinando datos de MariaDB y DynamoDB.</td></tr>
+        <tr><td>14</td><td><strong>POST /api/usuarios</strong></td><td>Registro de un nuevo miembro en el padrón.</td><td>Conectado al formulario de alta de miembro en la vista Administrador.</td></tr>
+        <tr><td>15</td><td><strong>PUT /api/usuarios/:id</strong></td><td>Actualización de perfil y privacidad.</td><td>Si el consentimiento pasa a "no", limpia su ubicación en ambas bases.</td></tr>
+        <tr><td>16</td><td><strong>DELETE /api/usuarios/:id</strong></td><td>Eliminación de un miembro del padrón.</td><td>Remueve el registro en MariaDB y refresca los conteos del panel.</td></tr>
+        <tr><td>17</td><td><strong>GET /api/interacciones</strong></td><td>Consulta histórica paginada por cursor.</td><td>Alimenta la sección "Actividad" / "Conversaciones" con filtros.</td></tr>
+        <tr><td>18</td><td><strong>GET /api/interacciones/:id</strong></td><td>Consulta puntual de una interacción.</td><td>Permite verificar en Postman un documento individual de DynamoDB.</td></tr>
+        <tr><td>19</td><td><strong>POST /api/interacciones</strong></td><td>Creación de interacción en DynamoDB.</td><td>Se ejecuta desde Postman y dispara por WebSocket el recálculo en vivo.</td></tr>
+        <tr><td>20</td><td><strong>PUT y PATCH /api/interacciones/:id</strong></td><td>Modificación total o parcial de interacción.</td><td>Se ejecuta desde Postman y actualiza gráficas y tarjetas vía WebSocket.</td></tr>
+        <tr><td>21</td><td><strong>DELETE /api/interacciones/:id</strong></td><td>Eliminación de interacción en DynamoDB.</td><td>Se ejecuta desde Postman y descuenta en vivo la métrica vía WebSocket.</td></tr>
       </tbody>
     </table>
+    <p>
+      Adicionalmente, el router incluye las rutas de soporte analítico y de calidad de datos (<strong>GET /api/analytics/resumen</strong>, <strong>GET /api/analytics/mapa</strong>, <strong>GET /api/cuarentena</strong>, <strong>GET /api/cuarentena/:id</strong>, <strong>POST /api/cuarentena/:id/reprocesar</strong> y <strong>GET /api/bitacora</strong>) que completan la integración entre el motor relacional y el documental.
+    </p>
 
-    <h3>Diagrama de Arquitectura de Datos Híbrida (SQL 3FN + NoSQL Documental)</h3>
-    <div class="schema-diagram">
-      <div class="schema-box">
-        <h4>Catálogo 3FN (MariaDB)</h4>
-        <ul>
-          <li><strong>paises:</strong> <code>pais_id (PK)</code>, <code>nombre (UK)</code></li>
-          <li><strong>estados:</strong> <code>estado_id (PK)</code>, <code>pais_id (FK)</code>, <code>nombre</code></li>
-          <li><strong>ciudades:</strong> <code>ciudad_id (PK)</code>, <code>estado_id (FK)</code>, <code>nombre</code>, <code>zona_horaria</code></li>
-        </ul>
-      </div>
-      <div class="schema-box">
-        <h4>Padrón y Seguridad (MariaDB)</h4>
-        <ul>
-          <li><strong>usuarios (1,068):</strong> <code>id_usuario (PK)</code>, <code>alias (UK)</code>, <code>ciudad_id (FK NULL)</code>, <code>latitud/longitud (NULL si no consiente)</code>, <code>estatus</code>, <code>sentimiento_promedio</code>, <code>consentimiento_datos</code></li>
-          <li><strong>administradores_auth:</strong> <code>admin_id (PK)</code>, <code>username</code>, <code>password_hash (bcrypt)</code>, <code>rol</code></li>
-          <li><strong>bitacora_etl:</strong> auditoría de corridas ETL</li>
-        </ul>
-      </div>
-      <div class="schema-box">
-        <h4>Colecciones (DynamoDB)</h4>
-        <ul>
-          <li><strong>community360_interacciones (207):</strong> <code>id_interaccion (PK)</code>, GSIs <code>gsi_usuario_fecha</code> y <code>gsi_canal_fecha</code>, <code>tipo</code>, <code>texto</code>, <code>sentimiento</code>, <code>reacciones_recibidas</code>, <code>etiquetas[]</code>, <code>ubicacion{}</code></li>
-          <li><strong>community360_cuarentena (793):</strong> <code>id_interaccion (PK)</code>, GSI <code>gsi_motivo_fecha</code>, <code>registro_original{}</code></li>
-        </ul>
-      </div>
+    <div class="page-break"></div>
+
+    <!-- 3. EVOLUCIÓN DEL STACK TECNOLÓGICO -->
+    <h2>3. Evolución del Stack Tecnológico</h2>
+    <ul>
+      <li><strong>Bases de datos en la nube (Arquitectura Híbrida AWS):</strong> Amazon RDS for MariaDB (instancia <em>db.t3.micro</em> con cifrado TLS en <em>us-east-2</em>) para las entidades relacionales normalizadas en 3FN y Amazon DynamoDB (tablas <em>community360_interacciones</em> y <em>community360_cuarentena</em> con capacidad aprovisionada de 5 RCU y 5 WCU dentro de la capa gratuita) para las colecciones documentales.</li>
+      <li><strong>Backend y Seguridad:</strong> Node.js con Express 5, cliente <em>mysql2/promise</em> con pool de conexiones, AWS SDK v3 (<em>@aws-sdk/lib-dynamodb</em>), validación de esquemas con <em>Zod</em>, cabeceras de seguridad con <em>Helmet</em>, control de tasa de peticiones con <em>express-rate-limit</em>, cifrado de contraseñas con <em>bcryptjs</em> y sesiones con <em>jsonwebtoken</em>.</li>
+      <li><strong>Comunicación en Tiempo Real:</strong> <em>Socket.io</em> integrado sobre el mismo servidor HTTP con apretón de manos (<em>handshake</em>) autenticado por JWT.</li>
+      <li><strong>Frontend y Visualización:</strong> HTML5, CSS3 con soporte nativo para modo claro y modo oscuro, módulos ES6 sin empaquetadores pesados, <em>Chart.js 4.4</em> para las gráficas dinámicas (barras, dona y líneas) y <em>Leaflet 1.9</em> junto con <em>leaflet.heat</em> y cartografía de Esri ArcGIS para el mapa interactivo.</li>
+      <li><strong>Plataforma de Despliegue:</strong> <em>Render.com</em> (servicio web continuo conectado al repositorio de GitHub con soporte nativo para WebSockets y TLS).</li>
+    </ul>
+
+    <h3>Modificaciones respecto a la Fase 1</h3>
+    <p>
+      Durante la evolución del proyecto realicé tres ajustes técnicos importantes respecto al planteamiento inicial de la Fase 1:
+    </p>
+    <ul>
+      <li><strong>Cambio de proveedor de mapas base (de CARTO/OSM a Esri ArcGIS):</strong> Inicialmente se contemplaron teselas de CARTO sobre Leaflet, pero en entornos de producción exigían una llave comercial y mostraban marcas de agua de bloqueo. Se migró a cuatro capas oficiales de Esri ArcGIS (<em>Claro</em>, <em>Calles</em>, <em>Satélite</em> y <em>Relieve</em>) que operan por HTTPS sin requerir llave de API y permiten cambiar el estilo visual en vivo.</li>
+      <li><strong>Serialización de consultas sobre el pool de MariaDB y caché de corta duración:</strong> Al ejecutar seis agregaciones paralelas simultáneas sobre la instancia gratuita <em>db.t3.micro</em> de RDS, se detectaron tiempos de espera durante reconexiones en frío. Se optimizó el servicio analítico para reutilizar una sola conexión caliente del pool y mantener una caché en memoria que se invalida instantáneamente cuando entra un cambio por la API REST.</li>
+      <li><strong>Separación física de registros huérfanos en una segunda tabla de DynamoDB:</strong> En lugar de descartar las 793 interacciones cuyo usuario no existía en el padrón, se creó la tabla <em>community360_cuarentena</em> con su propio índice secundario por motivo y fecha, lo que permitió auditarlas en la pestaña de Revisión y vincularlas posteriormente cuando se identifica al miembro.</li>
+    </ul>
+
+    <!-- 4. ANÁLISIS DE BASE DE DATOS Y ESCALABILIDAD -->
+    <h2>4. Análisis de Base de Datos y Escalabilidad</h2>
+    <h3>Comportamiento ante Grandes Volúmenes de Información</h3>
+    <p>
+      Al haber implementado un <strong>esquema híbrido (SQL + NoSQL)</strong> desde el diseño de la persistencia, cada motor absorbe la carga para la que fue construido. Si la comunidad pasara de 1,000 registros a cientos de miles de miembros y millones de interacciones en tiempo real, el comportamiento sería distinto en cada capa:
+    </p>
+    <ul>
+      <li><strong>En Amazon DynamoDB (capa de actividad):</strong> Las inserciones y consultas puntuales por clave primaria o por los índices secundarios globales (<em>gsi_canal_fecha</em> y <em>gsi_usuario_fecha</em>) mantienen latencias de pocos milisegundos sin importar el tamaño total de la tabla. Sin embargo, el cuello de botella principal surgiría en dos puntos actuales: primero, la capacidad fija de la capa gratuita (<strong>5 RCU / 5 WCU</strong>), que estrangularía las escrituras masivas concurrentes; y segundo, el cálculo del resumen analítico que actualmente recorre las interacciones válidas para promediar sentimientos y reacciones.</li>
+      <li><strong>En Amazon RDS for MariaDB (capa relacional):</strong> Con cientos de miles de miembros, la estructura en Tercera Forma Normal seguiría funcionando de forma eficiente gracias a los índices sobre llaves foráneas (<em>ciudad_id</em>), estado y consentimiento. No obstante, el límite físico de conexiones y memoria RAM de la instancia <em>db.t3.micro</em> (1 GB de RAM) se convertiría en un cuello de botella si cientos de clientes solicitaran agregaciones geográficas al mismo tiempo.</li>
+    </ul>
+
+    <h3>Modificaciones Técnicas Propuestas para Escalar el Proyecto</h3>
+    <ol>
+      <li><strong>Activar DynamoDB Streams + AWS Lambda para preagregación incremental:</strong> En lugar de recorrer los documentos de interacciones al solicitar el resumen analítico, conectar un flujo de <em>DynamoDB Streams</em> que actualice contadores atómicos (total por canal, total por tipo, suma de reacciones y suma de sentimiento) en un registro de resumen dentro de DynamoDB cada vez que entra un <em>POST</em>, <em>PUT</em> o <em>DELETE</em>. Así, el dashboard consultaría un solo documento en tiempo constante $O(1)$.</li>
+      <li><strong>Cambiar DynamoDB a modo Bajo Demanda (On-Demand / Auto Scaling) y agregar Amazon ElastiCache (Redis):</strong> Esto eliminaría el tope de 5 unidades de lectura/escritura durante picos de tráfico comunitario, mientras que Redis compartiría la caché analítica y el adaptador de <em>Socket.io</em> entre múltiples instancias del servidor Node.js.</li>
+      <li><strong>Incorporar una Réplica de Lectura en Amazon RDS y RDS Proxy:</strong> Dirigir las escrituras de perfiles e inicios de sesión a la instancia primaria de MariaDB y enviar las consultas pesadas del mapa de calor y reportes a una réplica de lectura gestionada por <em>RDS Proxy</em> para evitar saturar el pool de conexiones.</li>
+    </ol>
+
+    <div class="page-break"></div>
+
+    <!-- 5. EVIDENCIAS DEL SISTEMA DESPLEGADO -->
+    <h2>5. Evidencias del Sistema Desplegado</h2>
+
+    <h3>5.1 Arquitectura de Consumo: WebSockets vs. Peticiones REST</h3>
+    <p>
+      El dashboard divide el consumo de información según la frecuencia con que cambian los datos y su costo operativo:
+    </p>
+    <ul>
+      <li><strong>Secciones alimentadas mediante WebSockets (Socket.io):</strong> Los cuatro indicadores principales del centro de mando (<em>Actividad en vivo</em>, <em>Ánimo dinámico</em>, <em>Promedio de reacciones</em> y la franja de pulso), la <em>gráfica de barras de participación por canal</em>, la <em>gráfica de dona de distribución por tipo de actividad</em> y la lista de publicaciones recientes se actualizan por eventos WebSocket (<em>interaccion:creada</em>, <em>interaccion:actualizada</em>, <em>interaccion:eliminada</em> y <em>analytics:actualizado</em>). Se eligió WebSockets para estos componentes porque la actividad social ocurre de forma continua y asincrónica; usar encuestas periódicas (<em>polling</em>) desperdiciaría unidades de lectura en DynamoDB, mientras que el empuje desde el servidor actualiza la pantalla al instante sólo cuando ocurre una transacción real.</li>
+      <li><strong>Secciones alimentadas mediante peticiones REST (HTTP GET/POST/PUT/DELETE):</strong> El inicio de sesión, la carga inicial del resumen analítico, el directorio paginado de miembros con filtros de búsqueda, la descarga de CSV, la inspección de miembros al hacer clic sobre una ciudad en el mapa y la auditoría de cuarentena operan por REST. Se eligió REST para estas vistas porque responden a acciones puntuales iniciadas por el usuario (cambiar de página, aplicar un filtro o abrir el expediente de un miembro), donde el modelo petición-respuesta con control de permisos por token JWT es más predecible y eficiente.</li>
+    </ul>
+
+    <h3>5.2 Justificación y Utilidad de las Métricas Implementadas</h3>
+    <ul>
+      <li><strong>Indicadores Dinámicos Superiores (Miembros, Activos, Actividad en Vivo y Ánimo Dinámico):</strong> Condenan en cuatro cifras el estado de salud de la comunidad. Permiten identificar de inmediato cuántos perfiles están en riesgo de abandono (<strong>421 en riesgo</strong> y <strong>257 inactivos</strong> frente a <strong>390 activos</strong>) para diseñar campañas de reactivación, así como vigilar si el tono general de las conversaciones (+0.30, con 75.36% de positividad) se mantiene saludable o requiere intervención de moderación.</li>
+      <li><strong>Gráfica de Barras — Participación por Canal (A1):</strong> Compara el volumen de interacciones en Telegram, Discord, Twitter/X, Facebook, Instagram y TikTok. Aporta valor directo para decidir en qué plataformas concentrar a los moderadores y dónde publicar los avisos oficiales de la comunidad.</li>
+      <li><strong>Gráfica de Dona — Distribución por Tipo de Actividad (A3):</strong> Desglosa la proporción entre publicaciones, comentarios, mensajes, reacciones y compartidos en tiempo real. Ayuda a distinguir si la comunidad está generando conversación propia o únicamente consumiendo contenido de forma pasiva.</li>
+      <li><strong>Gráfica de Dona de Estado y Barras de Intereses (A4 y A5):</strong> Muestra la proporción de miembros activos, en riesgo e inactivos junto con los intereses principales (Arte digital, Animación, Videojuegos, Escritura). Sirve para planear talleres, concursos o dinámicas temáticas alineadas con lo que realmente motiva a los miembros.</li>
+      <li><strong>Mapa Interactivo de Calor y Clusters por Ciudad:</strong> Representa exclusivamente las <strong>897 ubicaciones autorizadas</strong> (excluyendo automáticamente a los <strong>171 miembros protegidos</strong>). Al hacer clic sobre cualquier ciudad, el inspector lateral muestra el desglose local de miembros activos, en riesgo e inactivos y permite listar a los integrantes de esa región, lo cual resulta clave para decidir en qué ciudades organizar encuentros o eventos presenciales con mayor asistencia asegurada.</li>
+    </ul>
+
+    <h3>5.3 Vistas del Sistema y Pruebas Funcionales en Tiempo Real (Pantalla Dividida)</h3>
+
+    <div class="evidence-card">
+      <h4>Evidencia A — Despliegue en Nube (Render) y Vista Principal del Dashboard</h4>
+      <p>Muestra el servicio desplegado en Render conectado a AWS RDS MariaDB y Amazon DynamoDB, junto con el centro de mando principal con conexión WebSocket activa ("En vivo") y soporte de modo claro y oscuro.</p>
+      <div class="evidence-slot" data-slot="evidencia-a" contenteditable="false">Haz clic aquí para subir tu imagen o pega tu captura con Ctrl + V (Render / Vista general del Dashboard)</div>
+    </div>
+
+    <div class="evidence-card">
+      <h4>Evidencia B — Mapa Interactivo con Inspector de Ciudad y Resguardo de Privacidad</h4>
+      <p>Demuestra la exploración geográfica sobre las 897 ubicaciones autorizadas (con los 171 perfiles sin consentimiento excluidos). Al seleccionar una ciudad en el mapa, se despliega su desglose de miembros activos, en riesgo e inactivos y el acceso directo a sus perfiles.</p>
+      <div class="evidence-slot" data-slot="evidencia-b" contenteditable="false">Haz clic aquí para subir tu imagen o pega tu captura con Ctrl + V (Mapa Interactivo con Inspector de Ciudad)</div>
+    </div>
+
+    <div class="evidence-card">
+      <h4>Prueba Funcional 1 en Pantalla Dividida — Creación en Tiempo Real (POST /api/interacciones)</h4>
+      <p><strong>Descripción:</strong> En la mitad derecha se ejecuta desde Postman la petición <em>POST /api/interacciones</em> creando el registro <em>I999999</em> en el canal Discord con 18 reacciones (código HTTP 201). En la mitad izquierda, sin recargar el navegador, el contador de Actividad en Vivo sube de <strong>207 a 208</strong>, se actualiza la gráfica de barras y de dona y aparece la notificación en tiempo real.</p>
+      <div class="evidence-slot" data-slot="prueba-post" contenteditable="false">Haz clic aquí para subir tu imagen o pega tu captura con Ctrl + V (Pantalla Dividida 1: Dashboard en 208 + Postman POST 201)</div>
+    </div>
+
+    <div class="evidence-card">
+      <h4>Prueba Funcional 2 en Pantalla Dividida — Actualización en Tiempo Real (PUT / PATCH /api/interacciones/I999999)</h4>
+      <p><strong>Descripción:</strong> En la mitad derecha se ejecuta en Postman la petición <em>PUT /api/interacciones/I999999</em> cambiando el canal a Instagram, el tipo a comentario y elevando las reacciones recibidas a 42 (código HTTP 200). En la mitad izquierda, las gráficas de distribución por canal y por tipo y el promedio de reacciones se recalculan instantáneamente vía WebSockets.</p>
+      <div class="evidence-slot" data-slot="prueba-put" contenteditable="false">Haz clic aquí para subir tu imagen o pega tu captura con Ctrl + V (Pantalla Dividida 2: Dashboard recalculado + Postman PUT 200)</div>
+    </div>
+
+    <div class="evidence-card">
+      <h4>Prueba Funcional 3 en Pantalla Dividida — Eliminación en Tiempo Real (DELETE /api/interacciones/I999999)</h4>
+      <p><strong>Descripción:</strong> En la mitad derecha se ejecuta desde Postman <em>DELETE /api/interacciones/I999999</em> (código HTTP 200). En la mitad izquierda, el indicador de Actividad en Vivo regresa automáticamente de <strong>208 a 207</strong> y las gráficas vuelven a su estado base sin recargar la página.</p>
+      <div class="evidence-slot" data-slot="prueba-delete" contenteditable="false">Haz clic aquí para subir tu imagen o pega tu captura con Ctrl + V (Pantalla Dividida 3: Dashboard regresa a 207 + Postman DELETE 200)</div>
     </div>
 
     <div class="page-break"></div>
-    <h2>3. Fase 2 — Limpieza, Transformación y Carga (ETL)</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Entidad Procesada</th>
-          <th>Leídos (CSV Raw)</th>
-          <th>Duplicados</th>
-          <th>Anonimizados (<code>consentimiento='no'</code>)</th>
-          <th>Transformados</th>
-          <th>Cargados Válidos</th>
-          <th>En Cuarentena</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>Usuarios (MariaDB)</strong></td>
-          <td>1,068</td>
-          <td>0</td>
-          <td><strong>171</strong></td>
-          <td>1,068</td>
-          <td><strong>1,068</strong></td>
-          <td>0</td>
-        </tr>
-        <tr>
-          <td><strong>Interacciones (DynamoDB)</strong></td>
-          <td>1,000</td>
-          <td>0</td>
-          <td><strong>31</strong></td>
-          <td>207</td>
-          <td><strong>207</strong></td>
-          <td><strong>793</strong></td>
-        </tr>
-      </tbody>
-    </table>
 
-    <h3>Ejemplo Real de Registro Antes y Después de Anonimización (Miembro AshCh'a30)</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Campo del Perfil</th>
-          <th>Antes (Archivo Fuente — con ubicación no autorizada)</th>
-          <th>Después (Persistido en Nube — ubicación eliminada)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td><strong>Alias del miembro</strong></td><td>AshCh'a30</td><td>AshCh'a30</td></tr>
-        <tr><td><strong>Fecha de ingreso</strong></td><td>06/04/2026 (formato heterogéneo)</td><td>2026-04-06 (estándar ISO 8601)</td></tr>
-        <tr><td><strong>Autorización de ubicación</strong></td><td>No autorizada</td><td>No autorizada (Protegida)</td></tr>
-        <tr><td><strong>País / Estado / Ciudad</strong></td><td>México · Nuevo León · Monterrey</td><td><strong>Eliminado (Nulo)</strong></td></tr>
-        <tr><td><strong>Coordenadas geográficas</strong></td><td>25.6866, -100.3161</td><td><strong>Eliminadas (Nulas)</strong></td></tr>
-      </tbody>
-    </table>
-
-    <h2>4. Fases 3, 4 y 5 — Autenticación, API REST y WebSockets</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Método</th>
-          <th>Endpoint REST</th>
-          <th>Códigos HTTP</th>
-          <th>Función y Evento WebSocket Emitido</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td><code>POST</code></td><td><code>/api/auth/login</code></td><td><code>200, 401, 429</code></td><td>Valida bcrypt contra MariaDB y emite JWT.</td></tr>
-        <tr><td><code>GET</code></td><td><code>/api/interacciones</code></td><td><code>200, 400, 401</code></td><td>Consulta histórica paginada vía GSIs filtrando ubicaciones no autorizadas.</td></tr>
-        <tr><td><code>POST</code></td><td><code>/api/interacciones</code></td><td><code>201, 409, 422</code></td><td>Valida usuario en MariaDB y privacidad; emite <code>interaccion:creada</code> + <code>analytics:actualizado</code>.</td></tr>
-        <tr><td><code>PUT / PATCH</code></td><td><code>/api/interacciones/:id</code></td><td><code>200, 400, 404</code></td><td>Actualiza en DynamoDB; emite <code>interaccion:actualizada</code> + <code>analytics:actualizado</code>.</td></tr>
-        <tr><td><code>DELETE</code></td><td><code>/api/interacciones/:id</code></td><td><code>200, 404</code></td><td>Elimina en DynamoDB; emite <code>interaccion:eliminada</code> + <code>analytics:actualizado</code>.</td></tr>
-        <tr><td><code>GET</code></td><td><code>/api/analytics/resumen</code></td><td><code>200</code></td><td>KPIs e indicadores dinámicos híbridos (MariaDB + DynamoDB).</td></tr>
-        <tr><td><code>GET</code></td><td><code>/api/analytics/mapa</code></td><td><code>200</code></td><td>Coordenadas autorizadas (793 puntos; 171 excluidos por privacidad).</td></tr>
-      </tbody>
-    </table>
-
-    <h2>5. Fase 6 — Definición Matemática de Indicadores Dinámicos</h2>
-    <div class="formula-box">
-      <strong>1. Total de Actividad ($N$) y Promedio de Reacciones ($\bar{r}$):</strong>
-      <code>N = |I|</code> &nbsp;|&nbsp; <code>r̄ = (1 / N) · Σ r_i</code>
-    </div>
-    <div class="formula-box">
-      <strong>2. Sentimiento Promedio de Actividad ($\bar{s}_{\text{act}}$) y Tasa de Positividad ($P_{+}$):</strong>
-      <code>s̄_act = (1 / N_s) · Σ s_i</code> (donde <code>s_i ∈ [-1, 1]</code>) &nbsp;|&nbsp; <code>P_+ = (|{i ∈ I : s_i ≥ 0.05}| / N_s) × 100%</code>
-    </div>
-    <div class="formula-box">
-      <strong>3. Participación por Canal ($T_c$ — Gráfica de Barras) y por Tipo ($T_t$ — Gráfica de Dona):</strong>
-      <code>T_c = (n_c / N) × 100%</code> &nbsp;|&nbsp; <code>T_t = (n_t / N) × 100%</code> (ambas recalculadas en vivo vía WebSockets)
-    </div>
-    <div class="formula-box">
-      <strong>4. Intensidad Dinámica del Mapa de Calor (<code>leaflet.heat</code>):</strong>
-      <code>w_k = min(1.0, max(0.28, (s_k + 1)/2 + min(0.28, 0.08 · ln(1 + a_ciudad(k)))))</code> (solo para miembros con <code>consentimiento_datos = 'si'</code>)
+    <!-- 6. ENLACES DE DESPLIEGUE Y CREDENCIALES DE EVALUACIÓN -->
+    <h2>6. Enlaces de Despliegue y Credenciales de Evaluación</h2>
+    <div class="credentials-box">
+      <p style="margin-bottom:8px"><strong>Liga pública del proyecto desplegado (Render):</strong> <span class="editable-hint">[Pega aquí tu URL pública de Render, ej. https://community360-xxxx.onrender.com]</span></p>
+      <p style="margin-bottom:10px"><strong>Repositorio en GitHub:</strong> https://github.com/pablini31/Comunidad360-_usando_AWS</p>
+      <hr style="border:0;border-top:1px solid #b7e1cd;margin:10px 0">
+      <p style="margin-bottom:6px"><strong>Credenciales del Usuario Docente (creado y activo en Amazon RDS MariaDB):</strong></p>
+      <ul style="margin-bottom:8px">
+        <li><strong>Usuario:</strong> lizandro.reyes</li>
+        <li><strong>Correo electrónico:</strong> lizandro.reyes@utmetropolitana.edu.mx</li>
+        <li><strong>Contraseña:</strong> lizandr0_reye$</li>
+        <li><strong>Rol asignado:</strong> Administrador (acceso completo al dashboard y a todas las vistas operativas)</li>
+      </ul>
+      <p style="margin-bottom:0;font-size:12px;color:var(--muted)">
+        <em>Cuentas adicionales de demostración:</em> Administrador rápido (<strong>admin</strong> / <strong>1234</strong>) y Analista editorial (<strong>analista</strong> / <strong>1234</strong>).
+      </p>
     </div>
 
-    <h2>6. Evidencias de Ejecución (Espacios para Capturas en tu Entrega)</h2>
-    <div class="evidence-slot">Evidencia 1: Captura de Tablas en AWS (RDS MariaDB 1,068 usuarios + DynamoDB 207 interacciones y 793 cuarentena)</div>
-    <div class="evidence-slot">Evidencia 2: Petición POST / PUT / DELETE en Postman + Respuesta HTTP (201 / 200) + Cambio en vivo en el Dashboard</div>
+    <!-- 7. CONCLUSIONES Y REFERENCIAS BIBLIOGRÁFICAS (APA 7) -->
+    <h2>7. Conclusiones y Referencias Bibliográficas</h2>
+    <h3>Conclusión Personal</h3>
+    <p>
+      Desarrollar y desplegar <strong>Community 360</strong> me permitió comprobar en la práctica por qué una arquitectura híbrida en la nube resuelve problemas que un solo motor de base de datos difícilmente cubriría con la misma limpieza. Mantener el padrón de miembros y los catálogos geográficos en <strong>Amazon RDS for MariaDB</strong> garantizó integridad referencial y evitó duplicar países, estados y ciudades, mientras que delegar las interacciones y la bandeja de cuarentena a <strong>Amazon DynamoDB</strong> facilitó almacenar documentos con etiquetas variables y consultarlos por canal o usuario sin alterar esquemas rígidos.
+    </p>
+    <p>
+      Uno de los mayores retos técnicos fue coordinar ambos motores dentro de los límites de la capa gratuita de AWS (especialmente las 5 unidades de lectura y escritura en DynamoDB y el límite de conexiones de la instancia <em>db.t3.micro</em>), así como asegurar que la regla de privacidad geográfica no dependiera únicamente de ocultar datos en la interfaz, sino que se aplicara desde la limpieza ETL, los disparadores de base de datos y las respuestas de la API. Finalmente, integrar <strong>Socket.io</strong> sobre el despliegue en <strong>Render</strong> demostró el valor real de los sistemas reactivos: transformar datos crudos en indicadores vivos que responden al instante ante cualquier operación externa en Postman para apoyar la toma de decisiones en una comunidad real.
+    </p>
+
+    <h3>Referencias Bibliográficas (Formato APA 7.ª Edición)</h3>
+    <div class="apa-ref">
+      Amazon Web Services. (2026). <em>Amazon DynamoDB developer guide: Provisioned capacity and global secondary indexes</em>. AWS Documentation. https://docs.aws.amazon.com/dynamodb/
+    </div>
+    <div class="apa-ref">
+      Amazon Web Services. (2026). <em>Amazon Relational Database Service (RDS) user guide for MariaDB</em>. AWS Documentation. https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_MariaDB.html
+    </div>
+    <div class="apa-ref">
+      Kleppmann, M. (2017). <em>Designing data-intensive applications: The big ideas behind reliable, scalable, and maintainable systems</em>. O'Reilly Media.
+    </div>
+    <div class="apa-ref">
+      Socket.IO. (2026). <em>Socket.IO v4 documentation: Server initialization and JWT authentication middleware</em>. https://socket.io/docs/v4/
+    </div>
   </main>
 </body>
 </html>

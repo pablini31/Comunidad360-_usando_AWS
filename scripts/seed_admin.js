@@ -15,7 +15,14 @@ function readAccounts() {
     password: process.env.SEED_ANALYST_PASSWORD || '1234',
     role: 'analista',
   };
-  const accounts = [admin, analyst];
+  const docente = {
+    username: 'lizandro.reyes',
+    email: 'lizandro.reyes@utmetropolitana.edu.mx',
+    password: 'lizandr0_reye$',
+    role: 'admin',
+    matchIdentityOnly: true,
+  };
+  const accounts = [admin, analyst, docente];
   for (const account of accounts) {
     if (!account.username || !account.email || !account.password) {
       throw new Error('Configura SEED_ADMIN_USERNAME/EMAIL/PASSWORD y SEED_ANALYST_USERNAME/EMAIL/PASSWORD en .env.');
@@ -51,14 +58,14 @@ async function main() {
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
-    for (const { username, email, role, hash } of prepared) {
+    for (const { username, email, role, hash, matchIdentityOnly } of prepared) {
       const [byIdentity] = await connection.execute(
         'SELECT admin_id FROM administradores_auth WHERE username=? OR email=? FOR UPDATE',
         [username, email]
       );
       let targetId = byIdentity[0]?.admin_id || null;
 
-      if (!targetId) {
+      if (!targetId && !matchIdentityOnly) {
         const [byRole] = await connection.execute(
           'SELECT admin_id FROM administradores_auth WHERE rol=? ORDER BY admin_id ASC LIMIT 1 FOR UPDATE',
           [role]
