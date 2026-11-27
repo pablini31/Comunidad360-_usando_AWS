@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fileInput.style.display = 'none';
   document.body.appendChild(fileInput);
 
+
   let activeSlot = null;
 
   function renderSlotImage(slot, dataUrl) {
@@ -22,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (slot.dataset.slot) {
         localStorage.setItem(`c360_doc_img_${slot.dataset.slot}`, dataUrl);
       }
-    } catch {}
+    } catch { }
   }
 
   function loadFileIntoSlot(file, slot) {

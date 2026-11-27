@@ -8,7 +8,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3000",
+      "value": "https://community360-0ddh.onrender.com",
       "type": "string"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "key": "password",
-      "value": "1234",
+      "value": "",
       "type": "string"
     },
     {

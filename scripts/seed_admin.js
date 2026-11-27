@@ -4,25 +4,27 @@ const pool = require('../src/config/mariadb');
 
 function readAccounts() {
   const admin = {
-    username: (process.env.SEED_ADMIN_USERNAME || 'admin').trim(),
-    email: (process.env.SEED_ADMIN_EMAIL || 'admin@c360.com').trim(),
-    password: process.env.SEED_ADMIN_PASSWORD || '1234',
+    username: (process.env.SEED_ADMIN_USERNAME || '').trim(),
+    email: (process.env.SEED_ADMIN_EMAIL || '').trim(),
+    password: process.env.SEED_ADMIN_PASSWORD || '',
     role: 'admin',
   };
   const analyst = {
-    username: (process.env.SEED_ANALYST_USERNAME || 'analista').trim(),
-    email: (process.env.SEED_ANALYST_EMAIL || 'analista@c360.com').trim(),
-    password: process.env.SEED_ANALYST_PASSWORD || '1234',
+    username: (process.env.SEED_ANALYST_USERNAME || '').trim(),
+    email: (process.env.SEED_ANALYST_EMAIL || '').trim(),
+    password: process.env.SEED_ANALYST_PASSWORD || '',
     role: 'analista',
   };
-  const docente = {
-    username: 'lizandro.reyes',
-    email: 'lizandro.reyes@utmetropolitana.edu.mx',
-    password: 'lizandr0_reye$',
-    role: 'admin',
-    matchIdentityOnly: true,
-  };
-  const accounts = [admin, analyst, docente];
+  const accounts = [admin, analyst];
+  if (process.env.SEED_DOCENTE_USERNAME && process.env.SEED_DOCENTE_EMAIL && process.env.SEED_DOCENTE_PASSWORD) {
+    accounts.push({
+      username: process.env.SEED_DOCENTE_USERNAME.trim(),
+      email: process.env.SEED_DOCENTE_EMAIL.trim(),
+      password: process.env.SEED_DOCENTE_PASSWORD,
+      role: 'admin',
+      matchIdentityOnly: true,
+    });
+  }
   for (const account of accounts) {
     if (!account.username || !account.email || !account.password) {
       throw new Error('Configura SEED_ADMIN_USERNAME/EMAIL/PASSWORD y SEED_ANALYST_USERNAME/EMAIL/PASSWORD en .env.');

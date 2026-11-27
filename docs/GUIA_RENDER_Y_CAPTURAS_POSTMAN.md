@@ -35,12 +35,12 @@ Esta guía está diseñada para que completes tu despliegue en **Render.com** y 
 ## Parte 2 — Cómo Preparar tu Pantalla Dividida para las Capturas (Evidencia 2)
 
 1. **Divide tu pantalla en Windows (`Win + Flecha Izquierda` y `Win + Flecha Derecha`):**
-   - **Mitad Izquierda (Navegador):** Abre tu Dashboard (`https://TU-APP.onrender.com` o `http://localhost:3000`). Inicia sesión con **`admin`** / **`1234`**.
+   - **Mitad Izquierda (Navegador):** Abre tu Dashboard (`https://TU-APP.onrender.com` o `http://localhost:3000`). Inicia sesión con tu cuenta de administrador.
      - Verifica que arriba a la derecha aparezca el indicador verde **`En vivo`** (significa que el WebSocket `socket.io` está conectado).
      - La interfaz se adapta automáticamente al ancho de media pantalla (los 4 KPIs principales y las gráficas de barras y dona quedan visibles de un vistazo).
    - **Mitad Derecha (Postman):**
      - Haz clic en **Import** en Postman y selecciona el archivo [`postman/Community360_Demo.postman_collection.json`](../postman/Community360_Demo.postman_collection.json).
-     - Si estás probando contra **Render**, haz clic en el título de la colección → pestaña **Variables** y cambia `baseUrl` de `http://localhost:3000` a tu URL de Render (`https://TU-APP.onrender.com`, sin diagonal al final). Si pruebas en local, déjalo en `http://localhost:3000`.
+     - En la pestaña **Variables** de la colección, configura `baseUrl` con tu URL de Render y `password` con tu contraseña de administrador.
 
 ---
 
@@ -50,7 +50,7 @@ Ejecuta las peticiones de la colección en este orden mientras observas cómo ca
 
 | Paso en Postman | Endpoint y Método | Qué cambia en vivo en el Dashboard (Mitad Izquierda) | Qué capturar en pantalla |
 | :--- | :--- | :--- | :--- |
-| **1. Login Administrador** | `POST /api/auth/login` (`admin` / `1234`) | *(Guarda automáticamente el `token` JWT en Postman)* | Respuesta `200 OK` con el token JWT generado. |
+| **1. Login Administrador** | `POST /api/auth/login` | *(Guarda automáticamente el `token` JWT en Postman)* | Respuesta `200 OK` con el token JWT generado. |
 | **2. Consultar histórico** | `GET /api/interacciones?limit=20` | Muestra la consulta histórica paginada desde DynamoDB. | Respuesta `200 OK` con la lista de interacciones y `nextCursor`. |
 | **3. Crear interacción en vivo** | `POST /api/interacciones` (crea `I999999` en `Discord` con sentimiento `0.92` y `18` reacciones) | **Sin recargar:** el KPI **03 · ACTIVIDAD EN VIVO** sube de **`207` a `208`**, se recalcula el promedio de reacciones, sube la barra de `Discord` y la dona de `Publicación`, y aparece una notificación verde en la esquina. En la pestaña **ACTIVIDAD** aparece arriba la tarjeta de `@LunaArt1`. | **Captura estrella (POST):** Dashboard con `208` actividades + notificación toast + Postman mostrando `201 Created`. |
 | **4. Modificar interacción (PUT)** | `PUT /api/interacciones/I999999` (cambia canal a `Instagram`, tipo a `comentario` y reacciones a `42`) | **Sin recargar:** se actualizan al instante las gráficas de **Canales** (`Instagram` sube) y **Tipos** (`Comentario` sube), el promedio de reacciones sube y la tarjeta en **ACTIVIDAD** cambia su texto y canal en vivo. | **Captura (PUT):** Dashboard con indicadores recalculados + Postman mostrando `200 OK`. |
